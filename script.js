@@ -2785,6 +2785,1331 @@ https://github.com/nodeca/pako/blob/main/LICENSE
 
 /***/ }),
 
+/***/ "./node_modules/magic-bytes.js/dist/index.js":
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+"use strict";
+
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.filetypeextension = exports.filetypemime = exports.filetypename = exports.filetypeinfo = void 0;
+const pattern_tree_1 = __importDefault(__webpack_require__("./node_modules/magic-bytes.js/dist/model/pattern-tree.js"));
+const toHex_1 = __webpack_require__("./node_modules/magic-bytes.js/dist/model/toHex.js");
+const patternTree = pattern_tree_1.default();
+const filetypeinfo = (bytes) => {
+    let tree = patternTree;
+    for (const k of Object.keys(tree.offset)) {
+        const offset = toHex_1.fromHex(k);
+        const offsetExceedsFile = offset >= bytes.length;
+        if (offsetExceedsFile) {
+            continue;
+        }
+        const node = patternTree.offset[k];
+        const guessed = walkTree(offset, bytes, node);
+        if (guessed.length > 0) {
+            return guessed;
+        }
+    }
+    if (tree.noOffset === null) {
+        return [];
+    }
+    return walkTree(0, bytes, tree.noOffset);
+};
+exports.filetypeinfo = filetypeinfo;
+const walkTree = (index, bytes, node) => {
+    let step = node;
+    let guessFile = [];
+    while (true) {
+        const currentByte = toHex_1.toHex(bytes[index]);
+        if (step.bytes["?"] && !step.bytes[currentByte]) {
+            step = step.bytes["?"];
+        }
+        else {
+            step = step.bytes[currentByte];
+        }
+        if (!step) {
+            return guessFile;
+        }
+        if (step && step.matches) {
+            guessFile = step.matches.slice(0);
+        }
+        index += 1;
+    }
+};
+exports["default"] = exports.filetypeinfo;
+const filetypename = (bytes) => exports.filetypeinfo(bytes).map((e) => e.typename);
+exports.filetypename = filetypename;
+const filetypemime = (bytes) => exports.filetypeinfo(bytes)
+    .map((e) => (e.mime ? e.mime : null))
+    .filter((x) => x !== null);
+exports.filetypemime = filetypemime;
+const filetypeextension = (bytes) => exports.filetypeinfo(bytes)
+    .map((e) => (e.extension ? e.extension : null))
+    .filter((x) => x !== null);
+exports.filetypeextension = filetypeextension;
+
+
+/***/ }),
+
+/***/ "./node_modules/magic-bytes.js/dist/model/pattern-tree.js":
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+const toHex_1 = __webpack_require__("./node_modules/magic-bytes.js/dist/model/toHex.js");
+const tree_1 = __webpack_require__("./node_modules/magic-bytes.js/dist/model/tree.js");
+// https://en.wikipedia.org/wiki/List_of_file_signatures
+let tree = {
+    noOffset: null,
+    offset: {},
+};
+const add = (typename, signature, additionalInfo, offset) => {
+    if (offset) {
+        const existing = tree.offset[toHex_1.toHex(offset)];
+        if (!existing) {
+            tree.offset[toHex_1.toHex(offset)] = tree_1.createComplexNode(typename, signature.map((e) => e.toLowerCase()), additionalInfo);
+        }
+        else {
+            const merged = tree_1.merge(tree_1.createNode(typename, signature.map((e) => e.toLowerCase()), additionalInfo), { ...existing });
+            tree.offset[toHex_1.toHex(offset)] = merged;
+        }
+    }
+    else {
+        if (tree.noOffset === null) {
+            tree.noOffset = tree_1.createComplexNode(typename, signature.map((e) => e.toLowerCase()), additionalInfo);
+        }
+        else {
+            tree.noOffset = tree_1.merge(tree_1.createNode(typename, signature.map((e) => e.toLowerCase()), additionalInfo), tree.noOffset);
+        }
+    }
+};
+add("gif", ["0x47", "0x49", "0x46", "0x38", "0x37", "0x61"], {
+    mime: "image/gif",
+    extension: "gif",
+});
+add("gif", ["0x47", "0x49", "0x46", "0x38", "0x39", "0x61"], {
+    mime: "image/gif",
+    extension: "gif",
+});
+add("jpg", ["0xFF", "0xD8", "0xFF"], {
+    mime: "image/jpeg",
+    extension: "jpeg",
+});
+add("webp", [
+    "0x52",
+    "0x49",
+    "0x46",
+    "0x46",
+    "?",
+    "?",
+    "?",
+    "?",
+    "0x57",
+    "0x45",
+    "0x42",
+    "0x50",
+], { mime: "image/webp", extension: "webp" });
+add("heif", ["0x66", "0x74", "0x79", "0x70", "0x6D", "0x69", "0x66", "0x31"], { mime: "image/heif", extension: "heif" }, 4);
+add("heif", ["0x66", "0x74", "0x79", "0x70", "0x68", "0x65", "0x69", "0x63"], { mime: "image/heif", extension: "heic" }, 4);
+add("rpm", ["0xed", "0xab", "0xee", "0xdb"]);
+add("bin", ["0x53", "0x50", "0x30", "0x31"], {
+    mime: "application/octet-stream",
+    extension: "bin",
+});
+add("pic", ["0x00"]);
+add("pif", ["0x00"]);
+add("sea", ["0x00"]);
+add("ytr", ["0x00"]);
+// 66747970
+// 6D703432
+add("mp4", ["0x66", "0x74", "0x79", "0x70"], { mime: "video/mp4", extension: "mp4" }, 0x4);
+add("ttf", ["0x00", "0x01", "0x00", "0x00", "0x00"], {
+    mime: "font/ttf",
+    extension: "ttf",
+});
+add("otf", ["0x4F", "0x54", "0x54", "0x4F"], {
+    mime: "font/otf",
+    extension: "otf",
+});
+add("eot", ["0x50", "0x4C"], {
+    mime: "application/vnd.ms-fontobject",
+    extension: "eot",
+});
+add("woff", ["0x77", "0x4F", "0x46", "0x46"], {
+    mime: "font/woff",
+    extension: "woff",
+});
+add("woff2", ["0x77", "0x4F", "0x46", "0x32"], {
+    mime: "font/woff2",
+    extension: "woff2",
+});
+add("pdb", [
+    "0x00",
+    "0x00",
+    "0x00",
+    "0x00",
+    "0x00",
+    "0x00",
+    "0x00",
+    "0x00",
+    "0x00",
+    "0x00",
+    "0x00",
+    "0x00",
+    "0x00",
+    "0x00",
+    "0x00",
+    "0x00",
+    "0x00",
+    "0x00",
+    "0x00",
+    "0x00",
+    "0x00",
+    "0x00",
+    "0x00",
+    "0x00",
+]);
+add("dba", ["0xBE", "0xBA", "0xFE", "0xCA"]);
+add("dba2", ["0x00", "0x01", "0x42", "0x44"]);
+add("tda", ["0x00", "0x01", "0x44", "0x54"]);
+add("tda2", ["0x00", "0x01", "0x00", "0x00"]);
+add("ico", ["0x00", "0x00", "0x01", "0x00"], {
+    mime: "image/x-icon",
+    extension: "ico",
+});
+add("3gp", ["0x66", "0x74", "0x79", "0x70", "0x33", "0x67"]);
+add("z", ["0x1F", "0x9D"]);
+add("tar.z", ["0x1F", "0xA0"]);
+add("bac", [
+    "0x42",
+    "0x41",
+    "0x43",
+    "0x4B",
+    "0x4D",
+    "0x49",
+    "0x4B",
+    "0x45",
+    "0x44",
+    "0x49",
+    "0x53",
+    "0x4B",
+]);
+add("bz2", ["0x42", "0x5A", "0x68"], {
+    mime: "application/x-bzip2",
+    extension: "bz2",
+});
+add("tif", ["0x49", "0x49", "0x2A", "0x00"], {
+    mime: "image/tiff",
+    extension: "tif",
+});
+add("tiff", ["0x4D", "0x4D", "0x00", "0x2A"], {
+    mime: "image/tiff",
+    extension: "tiff",
+});
+add("cr2", [
+    "0x49",
+    "0x49",
+    "0x2A",
+    "0x00",
+    "0x10",
+    "0x00",
+    "0x00",
+    "0x00",
+    "0x43",
+    "0x52",
+]);
+add("cin", ["0x80", "0x2A", "0x5F", "0xD7"]);
+add("cin1", ["0x52", "0x4E", "0x43", "0x01"]);
+add("cin2", ["0x52", "0x4E", "0x43", "0x02"]);
+add("dpx", ["0x53", "0x44", "0x50", "0x58"]);
+add("dpx2", ["0x58", "0x50", "0x44", "0x53"]);
+add("exr", ["0x76", "0x2F", "0x31", "0x01"]);
+add("bpg", ["0x42", "0x50", "0x47", "0xFB"]);
+add("ilbm", [
+    "0x46",
+    "0x4F",
+    "0x52",
+    "0x4D",
+    "?",
+    "?",
+    "?",
+    "?",
+    "0x49",
+    "0x4C",
+    "0x42",
+    "0x4D",
+]);
+add("8svx", [
+    "0x46",
+    "0x4F",
+    "0x52",
+    "0x4D",
+    "?",
+    "?",
+    "?",
+    "?",
+    "0x38",
+    "0x53",
+    "0x56",
+    "0x58",
+]);
+add("acbm", [
+    "0x46",
+    "0x4F",
+    "0x52",
+    "0x4D",
+    "?",
+    "?",
+    "?",
+    "?",
+    "0x41",
+    "0x43",
+    "0x42",
+    "0x4D",
+]);
+add("anbm", [
+    "0x46",
+    "0x4F",
+    "0x52",
+    "0x4D",
+    "?",
+    "?",
+    "?",
+    "?",
+    "0x41",
+    "0x4E",
+    "0x42",
+    "0x4D",
+]);
+add("anim", [
+    "0x46",
+    "0x4F",
+    "0x52",
+    "0x4D",
+    "?",
+    "?",
+    "?",
+    "?",
+    "0x41",
+    "0x4E",
+    "0x49",
+    "0x4D",
+]);
+add("faxx", [
+    "0x46",
+    "0x4F",
+    "0x52",
+    "0x4D",
+    "?",
+    "?",
+    "?",
+    "?",
+    "0x46",
+    "0x41",
+    "0x58",
+    "0x58",
+]);
+add("ftxt", [
+    "0x46",
+    "0x4F",
+    "0x52",
+    "0x4D",
+    "?",
+    "?",
+    "?",
+    "?",
+    "0x46",
+    "0x54",
+    "0x58",
+    "0x54",
+]);
+add("smus", [
+    "0x46",
+    "0x4F",
+    "0x52",
+    "0x4D",
+    "?",
+    "?",
+    "?",
+    "?",
+    "0x53",
+    "0x4D",
+    "0x55",
+    "0x53",
+]);
+add("cmus", [
+    "0x46",
+    "0x4F",
+    "0x52",
+    "0x4D",
+    "?",
+    "?",
+    "?",
+    "?",
+    "0x43",
+    "0x4D",
+    "0x55",
+    "0x53",
+]);
+add("yuvn", [
+    "0x46",
+    "0x4F",
+    "0x52",
+    "0x4D",
+    "?",
+    "?",
+    "?",
+    "?",
+    "0x59",
+    "0x55",
+    "0x56",
+    "0x4E",
+]);
+add("iff", [
+    "0x46",
+    "0x4F",
+    "0x52",
+    "0x4D",
+    "?",
+    "?",
+    "?",
+    "?",
+    "0x46",
+    "0x41",
+    "0x4E",
+    "0x54",
+]);
+add("aiff", [
+    "0x46",
+    "0x4F",
+    "0x52",
+    "0x4D",
+    "?",
+    "?",
+    "?",
+    "?",
+    "0x41",
+    "0x49",
+    "0x46",
+    "0x46",
+], { mime: "audio/x-aiff", extension: "aiff" });
+add("idx", ["0x49", "0x4E", "0x44", "0x58"]);
+add("lz", ["0x4C", "0x5A", "0x49", "0x50"]);
+add("exe", ["0x4D", "0x5A"]);
+add("zip", ["0x50", "0x4B", "0x03", "0x04"], {
+    mime: "application/zip",
+    extension: "zip",
+});
+add("zip", ["0x50", "0x4B", "0x05", "0x06"], {
+    mime: "application/zip",
+    extension: "zip",
+});
+add("zip", ["0x50", "0x4B", "0x07", "0x08"], {
+    mime: "application/zip",
+    extension: "zip",
+});
+add("jar", ["0x50", "0x4B", "0x03", "0x04"], {
+    mime: "application/java-archive",
+    extension: "jar",
+});
+add("jar", ["0x50", "0x4B", "0x05", "0x06"], {
+    mime: "application/java-archive",
+    extension: "jar",
+});
+add("jar", ["0x50", "0x4B", "0x07", "0x08"], {
+    mime: "application/java-archive",
+    extension: "jar",
+});
+add("odt", ["0x50", "0x4B", "0x03", "0x04"], {
+    mime: "application/vnd.oasis.opendocument.text",
+    extension: "odt",
+});
+add("odt", ["0x50", "0x4B", "0x05", "0x06"], {
+    mime: "application/vnd.oasis.opendocument.text",
+    extension: "odt",
+});
+add("odt", ["0x50", "0x4B", "0x07", "0x08"], {
+    mime: "application/vnd.oasis.opendocument.text",
+    extension: "odt",
+});
+add("ods", ["0x50", "0x4B", "0x03", "0x04"], {
+    mime: "application/vnd.oasis.opendocument.spreadsheet",
+    extension: "ods",
+});
+add("ods", ["0x50", "0x4B", "0x05", "0x06"], {
+    mime: "application/vnd.oasis.opendocument.spreadsheet",
+    extension: "ods",
+});
+add("ods", ["0x50", "0x4B", "0x07", "0x08"], {
+    mime: "application/vnd.oasis.opendocument.spreadsheet",
+    extension: "ods",
+});
+add("odp", ["0x50", "0x4B", "0x03", "0x04"], {
+    mime: "application/vnd.oasis.opendocument.presentation",
+    extension: "odp",
+});
+add("odp", ["0x50", "0x4B", "0x05", "0x06"], {
+    mime: "application/vnd.oasis.opendocument.presentation",
+    extension: "odp",
+});
+add("odp", ["0x50", "0x4B", "0x07", "0x08"], {
+    mime: "application/vnd.oasis.opendocument.presentation",
+    extension: "odp",
+});
+add("docx", ["0x50", "0x4B", "0x03", "0x04"], {
+    mime: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    extension: "docx",
+});
+add("docx", ["0x50", "0x4B", "0x05", "0x06"], {
+    mime: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    extension: "docx",
+});
+add("docx", ["0x50", "0x4B", "0x07", "0x08"], {
+    mime: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    extension: "docx",
+});
+add("xlsx", ["0x50", "0x4B", "0x03", "0x04"], {
+    mime: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    extension: "xlsx",
+});
+add("xlsx", ["0x50", "0x4B", "0x05", "0x06"], {
+    mime: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    extension: "xlsx",
+});
+add("xlsx", ["0x50", "0x4B", "0x07", "0x08"], {
+    mime: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    extension: "xlsx",
+});
+add("pptx", ["0x50", "0x4B", "0x03", "0x04"], {
+    mime: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    extension: "pptx",
+});
+add("pptx", ["0x50", "0x4B", "0x05", "0x06"], {
+    mime: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    extension: "pptx",
+});
+add("pptx", ["0x50", "0x4B", "0x07", "0x08"], {
+    mime: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    extension: "pptx",
+});
+add("vsdx", ["0x50", "0x4B", "0x03", "0x04"], {
+    mime: "application/vnd.ms-visio.drawing",
+    extension: "vsdx",
+});
+add("vsdx", ["0x50", "0x4B", "0x05", "0x06"], {
+    mime: "application/vnd.ms-visio.drawing",
+    extension: "vsdx",
+});
+add("vsdx", ["0x50", "0x4B", "0x07", "0x08"], {
+    mime: "application/vnd.ms-visio.drawing",
+    extension: "vsdx",
+});
+add("apk", ["0x50", "0x4B", "0x03", "0x04"], {
+    mime: "application/vnd.android.package-archive",
+    extension: "apk",
+});
+add("apk", ["0x50", "0x4B", "0x05", "0x06"], {
+    mime: "application/vnd.android.package-archive",
+    extension: "apk",
+});
+add("apk", ["0x50", "0x4B", "0x07", "0x08"], {
+    mime: "application/vnd.android.package-archive",
+    extension: "apk",
+});
+add("aar", ["0x50", "0x4B", "0x03", "0x04"], {
+    mime: "application/vnd.android.package-archive",
+    extension: "aar",
+});
+add("aar", ["0x50", "0x4B", "0x05", "0x06"], {
+    mime: "application/vnd.android.package-archive",
+    extension: "aar",
+});
+add("aar", ["0x50", "0x4B", "0x07", "0x08"], {
+    mime: "application/vnd.android.package-archive",
+    extension: "aar",
+});
+add("rar", ["0x52", "0x61", "0x72", "0x21", "0x1A", "0x07", "0x00"], {
+    mime: "application/vnd.rar",
+    extension: "rar",
+});
+add("rar", ["0x52", "0x61", "0x72", "0x21", "0x1A", "0x07", "0x01", "0x00"], {
+    mime: "application/vnd.rar",
+    extension: "rar",
+});
+add("rar", ["0x7F", "0x45", "0x4C", "0x46"], {
+    mime: "application/vnd.rar",
+    extension: "rar",
+});
+add("png", ["0x89", "0x50", "0x4E", "0x47", "0x0D", "0x0A", "0x1A", "0x0A"], {
+    mime: "image/png",
+    extension: "png",
+});
+add("apng", ["0x89", "0x50", "0x4E", "0x47", "0x0D", "0x0A", "0x1A", "0x0A"], {
+    mime: "image/apng",
+    extension: "apng",
+});
+add("class", ["0xCA", "0xFE", "0xBA", "0xBE"]);
+add("class", ["0xEF", "0xBB", "0xBF"]);
+add("class", ["0xFE", "0xed", "0xFA", "0xCE"], undefined, 0x1000);
+add("class", ["0xFE", "0xed", "0xFA", "0xCF"], undefined, 0x1000);
+add("class", ["0xCE", "0xFA", "0xed", "0xFE"]);
+add("class", ["0xCF", "0xFA", "0xed", "0xFE"]);
+add("class", ["0xFF", "0xFE"]);
+add("class", ["0xFF", "0xFE"]);
+add("class", ["0xFF", "0xFE", "0x00", "0x00"]);
+add("ps", ["0x25", "0x21", "0x50", "0x53"], {
+    mime: "application/postscript",
+    extension: ".ps"
+});
+add("pdf", ["0x25", "0x50", "0x44", "0x46"], {
+    mime: "application/pdf",
+    extension: "pdf",
+});
+add("asf", [
+    "0x30",
+    "0x26",
+    "0xB2",
+    "0x75",
+    "0x8E",
+    "0x66",
+    "0xCF",
+    "0x11",
+    "0xA6",
+    "0xD9",
+    "0x00",
+    "0xAA",
+    "0x00",
+    "0x62",
+    "0xCE",
+    "0x6C",
+]);
+add("wma", [
+    "0x30",
+    "0x26",
+    "0xB2",
+    "0x75",
+    "0x8E",
+    "0x66",
+    "0xCF",
+    "0x11",
+    "0xA6",
+    "0xD9",
+    "0x00",
+    "0xAA",
+    "0x00",
+    "0x62",
+    "0xCE",
+    "0x6C",
+]);
+add("wmv", [
+    "0x30",
+    "0x26",
+    "0xB2",
+    "0x75",
+    "0x8E",
+    "0x66",
+    "0xCF",
+    "0x11",
+    "0xA6",
+    "0xD9",
+    "0x00",
+    "0xAA",
+    "0x00",
+    "0x62",
+    "0xCE",
+    "0x6C",
+]);
+add("deploymentimage", [
+    "0x24",
+    "0x53",
+    "0x44",
+    "0x49",
+    "0x30",
+    "0x30",
+    "0x30",
+    "0x31",
+]);
+// ogg video ' theora'
+add("ogv", [
+    "0x4F",
+    "0x67",
+    "0x67",
+    "0x53",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "0x80",
+    "0x74",
+    "0x68",
+    "0x65",
+    "0x6F",
+    "0x72",
+    "0x61",
+], {
+    mime: "video/ogg",
+    extension: "ogv",
+});
+// ogg video '\x01video'
+add("ogm", [
+    "0x4F",
+    "0x67",
+    "0x67",
+    "0x53",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "0x01",
+    "0x76",
+    "0x69",
+    "0x64",
+    "0x65",
+    "0x6F",
+    "0x00",
+], {
+    mime: "video/ogg",
+    extension: "ogm",
+});
+// ogg audio ' FLAC'
+add("oga", [
+    "0x4F",
+    "0x67",
+    "0x67",
+    "0x53",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "0x7F",
+    "0x46",
+    "0x4C",
+    "0x41",
+    "0x43",
+], {
+    mime: "audio/ogg",
+    extension: "oga",
+});
+// ogg audio 'Speex  '
+add("spx", [
+    "0x4F",
+    "0x67",
+    "0x67",
+    "0x53",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "0x53",
+    "0x70",
+    "0x65",
+    "0x65",
+    "0x78",
+    "0x20",
+    "0x20",
+], {
+    mime: "audio/ogg",
+    extension: "spx",
+});
+// ogg audio '\x01vorbis '
+add("ogg", [
+    "0x4F",
+    "0x67",
+    "0x67",
+    "0x53",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "0x01",
+    "0x76",
+    "0x6F",
+    "0x72",
+    "0x62",
+    "0x69",
+    "0x73",
+], {
+    mime: "audio/ogg",
+    extension: "ogg",
+});
+// default OGG container
+add("ogx", ["0x4F", "0x67", "0x67", "0x53"], {
+    mime: "application/ogg",
+    extension: "ogx",
+});
+add("psd", ["0x38", "0x42", "0x50", "0x53"], {
+    mime: "application/x-photoshop",
+    extension: "psd",
+});
+add("clip", ["0x43", "0x53", "0x46", "0x43", "0x48", "0x55", "0x4e", "0x4b"]);
+add("wav", [
+    "0x52",
+    "0x49",
+    "0x46",
+    "0x46",
+    "?",
+    "?",
+    "?",
+    "?",
+    "0x57",
+    "0x41",
+    "0x56",
+    "0x45",
+], { mime: "audio/x-wav", extension: "wav" });
+add("avi", [
+    "0x52",
+    "0x49",
+    "0x46",
+    "0x46",
+    "?",
+    "?",
+    "?",
+    "?",
+    "0x41",
+    "0x56",
+    "0x49",
+    "0x20",
+], { mime: "video/x-msvideo", extension: "avi" });
+add("mp3", ["0xFF", "0xFB"], { mime: "audio/mpeg", extension: "mp3" });
+add("mp3", ["0xFF", "0xF3"], { mime: "audio/mpeg", extension: "mp3" });
+add("mp3", ["0xFF", "0xF2"], { mime: "audio/mpeg", extension: "mp3" });
+add("mp3", ["0x49", "0x44", "0x33"], { mime: "audio/mpeg", extension: "mp3" });
+add("bmp", ["0x42", "0x4D"], { mime: "image/bmp", extension: "bmp" });
+add("iso", ["0x43", "0x44", "0x30", "0x30", "0x31"]);
+add("flac", ["0x66", "0x4C", "0x61", "0x43"]);
+add("mid", ["0x4D", "0x54", "0x68", "0x64"], {
+    mime: "audio/midi",
+    extension: "mid",
+});
+add("midi", ["0x4D", "0x54", "0x68", "0x64"], {
+    mime: "audio/midi",
+    extension: "midi",
+});
+add("doc", ["0xD0", "0xCF", "0x11", "0xE0", "0xA1", "0xB1", "0x1A", "0xE1"], {
+    mime: "application/msword",
+    extension: "doc",
+});
+add("xls", ["0xD0", "0xCF", "0x11", "0xE0", "0xA1", "0xB1", "0x1A", "0xE1"], {
+    mime: "application/vnd.ms-excel",
+    extension: "xls",
+});
+add("ppt", ["0xD0", "0xCF", "0x11", "0xE0", "0xA1", "0xB1", "0x1A", "0xE1"], {
+    mime: "application/vnd.ms-powerpoint",
+    extension: "ppt",
+});
+add("msg", ["0xD0", "0xCF", "0x11", "0xE0", "0xA1", "0xB1", "0x1A", "0xE1"]);
+add("dex", ["0x64", "0x65", "0x78", "0x0A", "0x30", "0x33", "0x35", "0x00"]);
+add("vmdk", ["0x4B", "0x44", "0x4D"]);
+add("crx", ["0x43", "0x72", "0x32", "0x34"]);
+add("fh8", ["0x41", "0x47", "0x44", "0x33"]);
+add("cwk", [
+    "0x05",
+    "0x07",
+    "0x00",
+    "0x00",
+    "0x42",
+    "0x4F",
+    "0x42",
+    "0x4F",
+    "0x05",
+    "0x07",
+    "0x00",
+    "0x00",
+    "0x00",
+    "0x00",
+    "0x00",
+    "0x00",
+    "0x00",
+    "0x00",
+    "0x00",
+    "0x00",
+    "0x00",
+    "0x01",
+]);
+add("cwk", [
+    "0x06",
+    "0x07",
+    "0xE1",
+    "0x00",
+    "0x42",
+    "0x4F",
+    "0x42",
+    "0x4F",
+    "0x06",
+    "0x07",
+    "0xE1",
+    "0x00",
+    "0x00",
+    "0x00",
+    "0x00",
+    "0x00",
+    "0x00",
+    "0x00",
+    "0x00",
+    "0x00",
+    "0x00",
+    "0x01",
+]);
+add("toast", ["0x45", "0x52", "0x02", "0x00", "0x00", "0x00"]);
+add("toast", ["0x8B", "0x45", "0x52", "0x02", "0x00", "0x00", "0x00"]);
+add("dmg", ["0x78", "0x01", "0x73", "0x0D", "0x62", "0x62", "0x60"]);
+add("xar", ["0x78", "0x61", "0x72", "0x21"]);
+add("dat", ["0x50", "0x4D", "0x4F", "0x43", "0x43", "0x4D", "0x4F", "0x43"]);
+add("nes", ["0x4E", "0x45", "0x53", "0x1A"]);
+add("tar", ["0x75", "0x73", "0x74", "0x61", "0x72", "0x00", "0x30", "0x30"], {
+    // As per Mozilla documentation available at:
+    // https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/MIME_types/Common_types
+    // or wikipedia page:
+    // https://en.wikipedia.org/wiki/List_of_archive_formats
+    mime: "application/x-tar",
+    extension: "tar"
+}, 0x101);
+add("tar", ["0x75", "0x73", "0x74", "0x61", "0x72", "0x20", "0x20", "0x00"], {
+    mime: "application/x-tar",
+    extension: "tar"
+}, 0x101);
+add("tox", ["0x74", "0x6F", "0x78", "0x33"]);
+add("mlv", ["0x4D", "0x4C", "0x56", "0x49"]);
+add("windowsupdate", [
+    "0x44",
+    "0x43",
+    "0x4D",
+    "0x01",
+    "0x50",
+    "0x41",
+    "0x33",
+    "0x30",
+]);
+add("7z", ["0x37", "0x7A", "0xBC", "0xAF", "0x27", "0x1C"], {
+    mime: "application/x-7z-compressed",
+    extension: "7z",
+});
+add("gz", ["0x1F", "0x8B"], { mime: "application/gzip", extension: "gz" });
+add("tar.gz", ["0x1F", "0x8B"], {
+    mime: "application/gzip",
+    extension: "tar.gz",
+});
+add("xz", ["0xFD", "0x37", "0x7A", "0x58", "0x5A", "0x00", "0x00"], {
+    mime: "application/gzip",
+    extension: "xz",
+});
+add("tar.xz", ["0xFD", "0x37", "0x7A", "0x58", "0x5A", "0x00", "0x00"], {
+    mime: "application/gzip",
+    extension: "tar.xz",
+});
+add("lz2", ["0x04", "0x22", "0x4D", "0x18"]);
+add("cab", ["0x4D", "0x53", "0x43", "0x46"]);
+add("mkv", ["0x1A", "0x45", "0xDF", "0xA3"], {
+    mime: "video/x-matroska",
+    extension: "mkv",
+});
+add("mka", ["0x1A", "0x45", "0xDF", "0xA3"], {
+    mime: "audio/x-matroska",
+    extension: "mka",
+});
+add("mks", ["0x1A", "0x45", "0xDF", "0xA3"], {
+    mime: "video/x-matroska",
+    extension: "mks",
+});
+add("mk3d", ["0x1A", "0x45", "0xDF", "0xA3"]);
+add("webm", ["0x1A", "0x45", "0xDF", "0xA3"], {
+    mime: "audio/webm",
+    extension: "webm",
+});
+add("dcm", ["0x44", "0x49", "0x43", "0x4D"], undefined, 0x80);
+add("xml", ["0x3C", "0x3f", "0x78", "0x6d", "0x6C", "0x20"], {
+    mime: "application/xml",
+    extension: "xml",
+});
+add("wasm", ["0x00", "0x61", "0x73", "0x6d"], {
+    mime: "application/wasm",
+    extension: "wasm",
+});
+add("lep", ["0xCF", "0x84", "0x01"]);
+add("swf", ["0x43", "0x57", "0x53"], {
+    mime: "application/x-shockwave-flash",
+    extension: "swf",
+});
+add("swf", ["0x46", "0x57", "0x53"], {
+    mime: "application/x-shockwave-flash",
+    extension: "swf",
+});
+add("deb", ["0x21", "0x3C", "0x61", "0x72", "0x63", "0x68", "0x3E"]);
+add("rtf", ["0x7B", "0x5C", "0x72", "0x74", "0x66", "0x31"], {
+    mime: "application/rtf",
+    extension: "rtf",
+});
+add("m2p", ["0x00", "0x00", "0x01", "0xBA"]);
+add("vob", ["0x00", "0x00", "0x01", "0xBA"]);
+add("mpg", ["0x00", "0x00", "0x01", "0xBA"], {
+    mime: "video/mpeg",
+    extension: "mpg",
+});
+add("mpeg", ["0x00", "0x00", "0x01", "0xBA"], {
+    mime: "video/mpeg",
+    extension: "mpeg",
+});
+add("mpeg", ["0x47"], { mime: "video/mpeg", extension: "mpeg" });
+add("mpeg", ["0x00", "0x00", "0x01", "0xB3"], {
+    mime: "video/mpeg",
+    extension: "mpeg",
+});
+// mov 'free' TODO: find test file
+add("mov", ["0x66", "0x72", "0x65", "0x65"], {
+    mime: "video/quicktime",
+    extension: "mov",
+}, 0x4);
+// mov 'mdat'
+add("mov", ["0x6D", "0x64", "0x61", "0x74"], {
+    mime: "video/quicktime",
+    extension: "mov",
+}, 0x4);
+// mov 'moov' TODO: find test file
+add("mov", ["0x6D", "0x6F", "0x6F", "0x76"], {
+    mime: "video/quicktime",
+    extension: "mov",
+}, 0x4);
+// move 'wide' TODO: find test file
+add("mov", ["0x77", "0x69", "0x64", "0x65"], {
+    mime: "video/quicktime",
+    extension: "mov",
+}, 0x4);
+// mov 'ftypqt'
+add("mov", ["0x66", "0x74", "0x79", "0x70", "0x71", "0x74"], {
+    mime: "video/quicktime",
+    extension: "mov",
+}, 0x4);
+add("hl2demo", ["0x48", "0x4C", "0x32", "0x44", "0x45", "0x4D", "0x4F"]);
+add("txt", ["0xEF", "0xBB", "0xBF"], {
+    mime: "text/plain; charset=UTF-8",
+    extension: "txt",
+});
+add("txt", ["0xFF", "0xFE"], {
+    mime: "text/plain; charset=UTF-16LE",
+    extension: "txt",
+});
+add("txt", ["0xFE", "0xFF"], {
+    mime: "text/plain; charset=UTF-16BE",
+    extension: "txt",
+});
+add("txt", ["0xFF", "0xFE", "0x00", "0x00"], {
+    mime: "text/plain; charset=UTF-32LE",
+    extension: "txt",
+});
+add("txt", ["0x00", "0x00", "0xFE", "0xFF"], {
+    mime: "text/plain; charset=UTF-32BE",
+    extension: "txt",
+});
+add("SubRip", ["0x31", "0x0D", "0x0A", "0x30", "0x30", "0x3A"], {
+    mime: "application/x-subrip",
+    extension: "srt",
+});
+add("WebVTT", [
+    "0xEF",
+    "0xBB",
+    "0xBF",
+    "0x57",
+    "0x45",
+    "0x42",
+    "0x56",
+    "0x54",
+    "0x54",
+    "0x0A",
+], {
+    mime: "text/vtt",
+    extension: "vtt",
+});
+add("WebVTT", [
+    "0xEF",
+    "0xBB",
+    "0xBF",
+    "0x57",
+    "0x45",
+    "0x42",
+    "0x56",
+    "0x54",
+    "0x54",
+    "0x0D",
+], {
+    mime: "text/vtt",
+    extension: "vtt",
+});
+add("WebVTT", [
+    "0xEF",
+    "0xBB",
+    "0xBF",
+    "0x57",
+    "0x45",
+    "0x42",
+    "0x56",
+    "0x54",
+    "0x54",
+    "0x20",
+], {
+    mime: "text/vtt",
+    extension: "vtt",
+});
+add("WebVTT", [
+    "0xEF",
+    "0xBB",
+    "0xBF",
+    "0x57",
+    "0x45",
+    "0x42",
+    "0x56",
+    "0x54",
+    "0x54",
+    "0x09",
+], {
+    mime: "text/vtt",
+    extension: "vtt",
+});
+add("WebVTT", ["0x57", "0x45", "0x42", "0x56", "0x54", "0x54", "0x0A"], {
+    mime: "text/vtt",
+    extension: "vtt",
+});
+add("WebVTT", ["0x57", "0x45", "0x42", "0x56", "0x54", "0x54", "0x0D"], {
+    mime: "text/vtt",
+    extension: "vtt",
+});
+add("WebVTT", ["0x57", "0x45", "0x42", "0x56", "0x54", "0x54", "0x20"], {
+    mime: "text/vtt",
+    extension: "vtt",
+});
+add("WebVTT", ["0x57", "0x45", "0x42", "0x56", "0x54", "0x54", "0x09"], {
+    mime: "text/vtt",
+    extension: "vtt",
+});
+add("Json", ["0x7B"], {
+    mime: "application/json",
+    extension: ".json",
+});
+add("Json", ["0x5B"], {
+    mime: "application/json",
+    extension: ".json",
+});
+add("ELF", ["0x7F", "0x45", "0x4C", "0x46"], {
+    mime: "application/x-executable",
+    extension: ".elf",
+});
+add("Mach-O", ["0xFE", "0xED", "0xFA", "0xC"], {
+    mime: "application/x-mach-binary",
+    extension: ".o",
+});
+add("Mach-O", ["0xFE", "0xED", "0xFA", "0xCF"], {
+    mime: "application/x-executable",
+    extension: "elf",
+});
+add("EML", ["0x52", "0x65", "0x63", "0x65", "0x69", "0x76", "0x65", "0x64", "0x3A"], {
+    mime: "message/rfc822",
+    extension: ".eml",
+});
+add("SVG", ["0x3c", "0x73", "0x76", "0x67"], {
+    mime: "image/svg+xml",
+    extension: "svg",
+});
+exports["default"] = () => tree;
+
+
+/***/ }),
+
+/***/ "./node_modules/magic-bytes.js/dist/model/toHex.js":
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.fromHex = exports.toHex = void 0;
+const hex = (num) => new Number(num).toString(16).toLowerCase();
+const toHex = (num) => `0x${hex(num).length === 1 ? "0" + hex(num) : hex(num)}`;
+exports.toHex = toHex;
+const fromHex = (hex) => new Number(hex);
+exports.fromHex = fromHex;
+
+
+/***/ }),
+
+/***/ "./node_modules/magic-bytes.js/dist/model/tree.js":
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.createComplexNode = exports.createNode = exports.merge = void 0;
+const createMatch = (leaf) => ({
+    typename: leaf.typename,
+    mime: leaf.info.mime,
+    extension: leaf.info.extension,
+});
+const isMatchingNode = (tree, path) => tree && path.length === 0;
+const head = (arr) => arr[0];
+const tail = (arr) => arr.slice(1, arr.length);
+const merge = (node, tree) => {
+    if (node.bytes.length === 0)
+        return tree;
+    const currentByte = head(node.bytes); // 0
+    const path = tail(node.bytes); // [1,2]
+    const currentTree = tree.bytes[currentByte];
+    // traversed to end. Just add key to leaf.
+    if (isMatchingNode(currentTree, path)) {
+        const matchingNode = tree.bytes[currentByte];
+        tree.bytes[currentByte] = {
+            ...matchingNode,
+            matches: [
+                ...(matchingNode.matches ? matchingNode.matches : []),
+                createMatch(node),
+            ],
+        };
+        return tree;
+    }
+    // Path exists already, Merge subtree
+    if (tree.bytes[currentByte]) {
+        tree.bytes[currentByte] = exports.merge(exports.createNode(node.typename, path, node.info), tree.bytes[currentByte]);
+        return tree;
+    }
+    // Tree did not exist before
+    if (!tree.bytes[currentByte]) {
+        tree.bytes[currentByte] = {
+            ...tree.bytes[currentByte],
+            ...exports.createComplexNode(node.typename, path, node.info),
+        };
+    }
+    return tree;
+};
+exports.merge = merge;
+const createNode = (typename, bytes, info) => {
+    return { typename, bytes, info: info ? info : {} };
+};
+exports.createNode = createNode;
+const createComplexNode = (typename, bytes, info) => {
+    let obj = {
+        bytes: {},
+        matches: undefined,
+    };
+    const currentKey = head(bytes); // 0
+    const path = tail(bytes); // [1,2]
+    if (bytes.length === 0) {
+        return {
+            matches: [
+                createMatch({
+                    typename: typename,
+                    info: info ? { extension: info.extension, mime: info.mime } : {},
+                }),
+            ],
+            bytes: {},
+        };
+    }
+    obj.bytes[currentKey] = exports.createComplexNode(typename, path, info);
+    return obj;
+};
+exports.createComplexNode = createComplexNode;
+
+
+/***/ }),
+
 /***/ "./node_modules/mini-css-extract-plugin/dist/hmr/hotModuleReplacement.js":
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
@@ -3008,7 +4333,7 @@ module.exports = function (moduleId, options) {
 
 // extracted by mini-css-extract-plugin
     if(true) {
-      // 1738114494736
+      // 1738264376571
       var cssReload = __webpack_require__("./node_modules/mini-css-extract-plugin/dist/hmr/hotModuleReplacement.js")(module.id, {"hmr":true,"locals":false});
       module.hot.dispose(cssReload);
       module.hot.accept(undefined, cssReload);
@@ -3022,7 +4347,7 @@ module.exports = function (moduleId, options) {
 
 // extracted by mini-css-extract-plugin
     if(true) {
-      // 1738114494725
+      // 1738264376574
       var cssReload = __webpack_require__("./node_modules/mini-css-extract-plugin/dist/hmr/hotModuleReplacement.js")(module.id, {"hmr":true,"locals":false});
       module.hot.dispose(cssReload);
       module.hot.accept(undefined, cssReload);
@@ -3036,7 +4361,7 @@ module.exports = function (moduleId, options) {
 
 // extracted by mini-css-extract-plugin
     if(true) {
-      // 1738114494721
+      // 1738264376577
       var cssReload = __webpack_require__("./node_modules/mini-css-extract-plugin/dist/hmr/hotModuleReplacement.js")(module.id, {"hmr":true,"locals":false});
       module.hot.dispose(cssReload);
       module.hot.accept(undefined, cssReload);
@@ -3050,7 +4375,7 @@ module.exports = function (moduleId, options) {
 
 // extracted by mini-css-extract-plugin
     if(true) {
-      // 1738114494718
+      // 1738264376568
       var cssReload = __webpack_require__("./node_modules/mini-css-extract-plugin/dist/hmr/hotModuleReplacement.js")(module.id, {"hmr":true,"locals":false});
       module.hot.dispose(cssReload);
       module.hot.accept(undefined, cssReload);
@@ -8353,7 +9678,6 @@ const Live2DModel = (props) => {
     const [ignored, forceUpdate] = (0, react_1.useReducer)(x => x + 1, 0);
     const { model, setModel } = (0, react_1.useContext)(demo_1.ModelContext);
     const { live2D, setLive2D } = (0, react_1.useContext)(demo_1.Live2DContext);
-    const { defaultOpacities, setDefaultOpacities } = (0, react_1.useContext)(demo_1.DefaultOpacitiesContext);
     const [controlHover, setControlHover] = (0, react_1.useState)(false);
     const [speed, setSpeed] = (0, react_1.useState)(1);
     const [paused, setPaused] = (0, react_1.useState)(false);
@@ -8364,7 +9688,6 @@ const Live2DModel = (props) => {
         const live2DModel = new live2dcubism_1.Live2DCubismModel(rendererRef.current, { cubismCorePath });
         await live2DModel.load(model);
         setLive2D(live2DModel);
-        setDefaultOpacities(structuredClone(live2DModel.parts.opacities));
     };
     (0, react_1.useEffect)(() => {
         load();
@@ -8374,7 +9697,7 @@ const Live2DModel = (props) => {
             return;
         live2D.paused = paused;
         live2D.speed = speed;
-        live2D.enableZoom = enableZoom;
+        live2D.zoomEnabled = enableZoom;
         forceUpdate();
     }, [live2D, paused, speed, enableZoom]);
     const changeSpeed = () => {
@@ -8456,11 +9779,11 @@ __webpack_require__("./demo/components/styles/parameters.less");
 const Parameters = (props) => {
     const [ignored, forceUpdate] = (0, react_1.useReducer)(x => x + 1, 0);
     const { live2D, setLive2D } = (0, react_1.useContext)(demo_1.Live2DContext);
-    const { defaultOpacities, setDefaultOpacities } = (0, react_1.useContext)(demo_1.DefaultOpacitiesContext);
-    const [expressionValues, setExpressionValues] = (0, react_1.useState)([]);
+    const [defaultOpacities, setDefaultOpacities] = (0, react_1.useState)(new Float32Array());
     const [motionValues, setMotionValues] = (0, react_1.useState)([]);
     (0, react_1.useEffect)(() => {
         if (live2D) {
+            setDefaultOpacities(structuredClone(live2D.parts.opacities));
             const loop = () => {
                 forceUpdate();
                 setTimeout(() => {
@@ -8476,11 +9799,7 @@ const Parameters = (props) => {
         let jsx = [];
         let parameters = live2D.parameters;
         const resetParameters = () => {
-            for (let i = 0; i < parameters.ids.length; i++) {
-                const defaultValue = parameters.defaultValues[i];
-                live2D.setParameter(i, defaultValue);
-            }
-            live2D.model.update();
+            live2D.resetParameters();
             forceUpdate();
         };
         for (let i = 0; i < parameters.ids.length; i++) {
@@ -8492,7 +9811,7 @@ const Parameters = (props) => {
             const keys = parameters.keyValues[i];
             const step = (Math.abs(max - min) / 100) || 0.01;
             const updateParameter = (value) => {
-                live2D.setParameter(i, value);
+                live2D.setParameter(id, value);
                 forceUpdate();
             };
             jsx.push(react_1.default.createElement("div", { className: "parameters-dialog-row" },
@@ -8513,19 +9832,14 @@ const Parameters = (props) => {
         let jsx = [];
         let parts = live2D.parts;
         const resetParts = () => {
-            var _a;
-            for (let i = 0; i < parts.ids.length; i++) {
-                const defaultValue = (_a = defaultOpacities[i]) !== null && _a !== void 0 ? _a : 1;
-                live2D.setPartOpacity(i, defaultValue);
-            }
-            live2D.model.update();
+            live2D.resetPartOpacities();
             forceUpdate();
         };
         for (let i = 0; i < parts.ids.length; i++) {
             const id = parts.ids[i];
             const opacity = parts.opacities[i];
             const updateOpacity = (opacity) => {
-                live2D.setPartOpacity(i, opacity);
+                live2D.setPartOpacity(id, opacity);
                 forceUpdate();
             };
             jsx.push(react_1.default.createElement("div", { className: "parameters-dialog-row" },
@@ -8646,7 +9960,7 @@ const TitleBar = (props) => {
         if (!file)
             return;
         const url = URL.createObjectURL(file);
-        setModel(url + "#.zip");
+        setModel(url);
     };
     return (react_1.default.createElement("div", { className: "titlebar-container" },
         react_1.default.createElement("img", { draggable: false, className: "titlebar-logo", src: live2d_png_1.default }),
@@ -8692,7 +10006,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.DefaultOpacitiesContext = exports.Live2DContext = exports.ModelContext = void 0;
+exports.Live2DContext = exports.ModelContext = void 0;
 const react_1 = __importStar(__webpack_require__("./node_modules/react/index.js"));
 const react_dom_1 = __importDefault(__webpack_require__("./node_modules/react-dom/profiling.js"));
 const react_router_dom_1 = __webpack_require__("./node_modules/react-router-dom/esm/react-router-dom.js");
@@ -8703,18 +10017,15 @@ __webpack_require__("./demo/demo.less");
 __webpack_require__("./assets sync recursive ^\\.\\/.*$");
 exports.ModelContext = react_1.default.createContext({ model: "", setModel: () => null });
 exports.Live2DContext = react_1.default.createContext({ live2D: null, setLive2D: () => null });
-exports.DefaultOpacitiesContext = react_1.default.createContext({ defaultOpacities: new Float32Array(), setDefaultOpacities: () => null });
 const App = (props) => {
     const [model, setModel] = (0, react_1.useState)("assets/Hiyori.zip");
     const [live2D, setLive2D] = (0, react_1.useState)(null);
-    const [defaultOpacities, setDefaultOpacities] = (0, react_1.useState)(new Float32Array());
     return (react_1.default.createElement("div", { className: "app" },
         react_1.default.createElement(exports.ModelContext.Provider, { value: { model, setModel } },
             react_1.default.createElement(exports.Live2DContext.Provider, { value: { live2D, setLive2D } },
-                react_1.default.createElement(exports.DefaultOpacitiesContext.Provider, { value: { defaultOpacities, setDefaultOpacities } },
-                    react_1.default.createElement(TitleBar_1.default, null),
-                    react_1.default.createElement(Parameters_1.default, null),
-                    react_1.default.createElement(Live2DModel_1.default, null))))));
+                react_1.default.createElement(TitleBar_1.default, null),
+                react_1.default.createElement(Parameters_1.default, null),
+                react_1.default.createElement(Live2DModel_1.default, null)))));
 };
 react_dom_1.default.render(react_1.default.createElement(react_router_dom_1.BrowserRouter, null,
     react_1.default.createElement(App, null)), document.getElementById("root"));
@@ -23578,7 +24889,7 @@ exports.CubismJsonExtension = CubismJsonExtension;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.WebGLRenderer = exports.MotionController = exports.ExpressionController = exports.MotionPriority = exports.Live2DBuffers = exports.Live2DModelOptions = exports.TouchController = exports.CameraController = exports.WavFileController = exports.Live2DCubismUserModel = exports.Live2DCubismModel = void 0;
+exports.isLive2DZip = exports.WebGLRenderer = exports.MotionController = exports.ExpressionController = exports.MotionPriority = exports.Live2DBuffers = exports.Live2DModelOptions = exports.TouchController = exports.CameraController = exports.WavFileController = exports.Live2DCubismUserModel = exports.Live2DCubismModel = void 0;
 const Live2DCubismModel_1 = __webpack_require__("./renderer/Live2DCubismModel.ts");
 Object.defineProperty(exports, "Live2DCubismModel", ({ enumerable: true, get: function () { return Live2DCubismModel_1.Live2DCubismModel; } }));
 Object.defineProperty(exports, "Live2DModelOptions", ({ enumerable: true, get: function () { return Live2DCubismModel_1.Live2DModelOptions; } }));
@@ -23598,6 +24909,8 @@ const TouchController_1 = __webpack_require__("./renderer/TouchController.ts");
 Object.defineProperty(exports, "TouchController", ({ enumerable: true, get: function () { return TouchController_1.TouchController; } }));
 const WebGLRenderer_1 = __webpack_require__("./renderer/WebGLRenderer.ts");
 Object.defineProperty(exports, "WebGLRenderer", ({ enumerable: true, get: function () { return WebGLRenderer_1.WebGLRenderer; } }));
+const Live2DCubismModel_2 = __webpack_require__("./renderer/Live2DCubismModel.ts");
+Object.defineProperty(exports, "isLive2DZip", ({ enumerable: true, get: function () { return Live2DCubismModel_2.isLive2DZip; } }));
 exports["default"] = Live2DCubismModel_1.Live2DCubismModel;
 
 
@@ -23613,7 +24926,7 @@ exports.CameraController = void 0;
 class CameraController {
     constructor(canvas) {
         this.zoomIn = (factor = 0.1) => {
-            if (!this.enableZoom)
+            if (!this.zoomEnabled)
                 return;
             const zoomFactor = 1 + factor;
             const newScale = Math.min(this.scale * zoomFactor, this.maxScale);
@@ -23624,7 +24937,7 @@ class CameraController {
             this.y = this.y - offsetY * newScale;
         };
         this.zoomOut = (factor = 0.1) => {
-            if (!this.enableZoom)
+            if (!this.zoomEnabled)
                 return;
             const zoomFactor = 1 - factor;
             const newScale = Math.max(this.scale * zoomFactor, this.minScale);
@@ -23657,7 +24970,7 @@ class CameraController {
             this.isPanning = false;
         };
         this.handleWheel = (event) => {
-            if (!this.enableZoom)
+            if (!this.zoomEnabled)
                 return;
             event.preventDefault();
             const delta = event.deltaY;
@@ -23672,7 +24985,7 @@ class CameraController {
                 this.isPanning = false;
                 this.lastPosition = { x: 0, y: 0 };
             }
-            if (this.enableZoom) {
+            if (this.zoomEnabled) {
                 this.scale = 1;
             }
         };
@@ -23763,34 +25076,11 @@ exports.ExpressionController = ExpressionController;
 
 "use strict";
 
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
-    __setModuleDefault(result, mod);
-    return result;
-};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.Live2DCubismModel = exports.MotionPriority = void 0;
+exports.Live2DCubismModel = exports.isLive2DZip = exports.MotionPriority = void 0;
 const cubismmodelsettingjson_1 = __webpack_require__("./framework/src/cubismmodelsettingjson.ts");
 const cubismdefaultparameterid_1 = __webpack_require__("./framework/src/cubismdefaultparameterid.ts");
 const cubismeyeblink_1 = __webpack_require__("./framework/src/effect/cubismeyeblink.ts");
@@ -23809,6 +25099,8 @@ const MotionController_1 = __webpack_require__("./renderer/MotionController.ts")
 const ExpressionController_1 = __webpack_require__("./renderer/ExpressionController.ts");
 const CameraController_1 = __webpack_require__("./renderer/CameraController.ts");
 const WebGLRenderer_1 = __webpack_require__("./renderer/WebGLRenderer.ts");
+const magic_bytes_js_1 = __importDefault(__webpack_require__("./node_modules/magic-bytes.js/dist/index.js"));
+const jszip_1 = __importDefault(__webpack_require__("./node_modules/jszip/dist/jszip.min.js"));
 const path_1 = __importDefault(__webpack_require__("./node_modules/path-browserify/index.js"));
 var MotionPriority;
 (function (MotionPriority) {
@@ -23818,12 +25110,43 @@ var MotionPriority;
     MotionPriority[MotionPriority["Force"] = 3] = "Force";
 })(MotionPriority = exports.MotionPriority || (exports.MotionPriority = {}));
 let id = null;
+const isLive2DZip = async (link) => {
+    var _a;
+    let isZip = path_1.default.extname(link).replace(".", "") === "zip";
+    const arrayBuffer = await fetch(link).then(r => r.arrayBuffer());
+    const result = ((_a = (0, magic_bytes_js_1.default)(new Uint8Array(arrayBuffer))) === null || _a === void 0 ? void 0 : _a[0]) || { mime: "" };
+    if (result.mime === "application/zip")
+        isZip = true;
+    if (!isZip)
+        return false;
+    const zip = await jszip_1.default.loadAsync(arrayBuffer);
+    let hasModel = false;
+    let hasMoc3 = false;
+    let hasTexture = false;
+    for (const [relativePath, file] of Object.entries(zip.files)) {
+        if (relativePath.startsWith("__MACOSX") || file.dir)
+            continue;
+        if (relativePath.endsWith('model3.json'))
+            hasModel = true;
+        if (relativePath.endsWith("moc3"))
+            hasMoc3 = true;
+        if (relativePath.match(/\.(png|jpg|webp|avif)$/))
+            hasTexture = true;
+    }
+    return hasModel && hasMoc3 && hasTexture;
+};
+exports.isLive2DZip = isLive2DZip;
 class Live2DCubismModel extends Live2DCubismUserModel_1.Live2DCubismUserModel {
     constructor(canvas, options) {
-        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u, _v, _w, _x, _y, _z, _0;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u, _v, _w, _x, _y, _z, _0, _1;
         if (!options)
             options = {};
         super();
+        this.events = {};
+        this.totalMotionCount = 0;
+        this.needsResize = false;
+        this.loaded = false;
+        this.cubismLoaded = false;
         this.destroy = () => {
             cancelAnimationFrame(id);
             this.motions.clear();
@@ -23861,35 +25184,44 @@ class Live2DCubismModel extends Live2DCubismUserModel_1.Live2DCubismUserModel {
             this.cubismLoaded = true;
         };
         this.loadBuffers = async (link) => {
-            const isZip = path_1.default.extname(link).replace(".", "") === "zip";
+            var _a;
+            let isZip = path_1.default.extname(link).replace(".", "") === "zip";
+            const arrayBuffer = await fetch(link).then(r => r.arrayBuffer()).catch(() => new ArrayBuffer(0));
+            if (!arrayBuffer.byteLength)
+                return Promise.reject(`Failed to load ${link}`);
+            const result = ((_a = (0, magic_bytes_js_1.default)(new Uint8Array(arrayBuffer))) === null || _a === void 0 ? void 0 : _a[0]) || { mime: "" };
+            if (result.mime === "application/zip")
+                isZip = true;
             let files = {};
             let basename = path_1.default.dirname(link);
             if (isZip) {
-                const JSZip = await Promise.resolve().then(() => __importStar(__webpack_require__("./node_modules/jszip/dist/jszip.min.js"))).then(r => r.default);
-                const zipBuffer = await fetch(link).then(r => r.arrayBuffer());
-                const zip = await JSZip.loadAsync(zipBuffer);
-                this.size = zipBuffer.byteLength;
+                const zip = await jszip_1.default.loadAsync(arrayBuffer);
+                this.size = arrayBuffer.byteLength;
                 for (const [relativePath, file] of Object.entries(zip.files)) {
                     if (relativePath.startsWith("__MACOSX") || file.dir)
                         continue;
                     const key = relativePath.split("/").slice(1).join("/");
                     const contents = await file.async("arraybuffer");
                     files[key] = contents;
-                    if (key.endsWith("model3.json"))
+                    if (!this.settings && key.endsWith("model3.json"))
                         this.settings = new cubismmodelsettingjson_1.CubismModelSettingJson(contents, contents.byteLength);
                 }
             }
             else {
-                const settingsBuffer = await fetch(link).then(r => r.arrayBuffer()).catch(() => new ArrayBuffer(0));
-                if (!settingsBuffer.byteLength)
-                    return Promise.reject(`Failed to load ${link}`);
-                this.settings = new cubismmodelsettingjson_1.CubismModelSettingJson(settingsBuffer, settingsBuffer.byteLength);
+                this.settings = new cubismmodelsettingjson_1.CubismModelSettingJson(arrayBuffer, arrayBuffer.byteLength);
             }
             const getBuffer = async (filename) => {
                 if (isZip) {
-                    const buffer = files[filename];
+                    let name = filename.startsWith(".") ? filename.split("/").slice(2).join("/") : filename;
+                    let buffer = null;
+                    for (const [key, value] of Object.entries(files)) {
+                        if (key.includes(name)) {
+                            buffer = value;
+                            break;
+                        }
+                    }
                     if (!(buffer === null || buffer === void 0 ? void 0 : buffer.byteLength))
-                        return Promise.reject(`Failed to load ${filename}`);
+                        return Promise.reject(`Failed to load ${name}`);
                     return buffer;
                 }
                 else {
@@ -23937,7 +25269,10 @@ class Live2DCubismModel extends Live2DCubismUserModel_1.Live2DCubismUserModel {
                 const url = URL.createObjectURL(blob);
                 const img = new Image();
                 img.src = url;
-                await new Promise(resolve => (img.onload = resolve));
+                await new Promise((resolve, reject) => {
+                    img.onload = () => resolve();
+                    img.onerror = (err) => reject(err);
+                });
                 textureImages.push(img);
             }
             this.buffers = { modelBuffer, expressionBuffers, physicsBuffer, poseBuffer, userDataBuffer, motionGroups, textureImages };
@@ -23949,7 +25284,7 @@ class Live2DCubismModel extends Live2DCubismUserModel_1.Live2DCubismUserModel {
                 await this.initializeCubism();
             const { modelBuffer, physicsBuffer, poseBuffer, userDataBuffer } = await this.loadBuffers(link);
             this.loadModel(modelBuffer, this._mocConsistency);
-            this.model.initialize();
+            this.initialize();
             await this.expressionController.load();
             if (physicsBuffer) {
                 this.loadPhysics(physicsBuffer, physicsBuffer.byteLength);
@@ -24127,7 +25462,11 @@ class Live2DCubismModel extends Live2DCubismUserModel_1.Live2DCubismUserModel {
                     this.wavController.update(this.deltaTime);
                     let value = this.wavController.getRms();
                     for (let i = 0; i < this.lipSyncIds.getSize(); ++i) {
-                        this.model.addParameterValueById(this.lipSyncIds.at(i), value, 0.8);
+                        const parameterIndex = this.model.getParameterIndex(this.lipSyncIds.at(i));
+                        const minValue = this.model.getParameterMinimumValue(parameterIndex);
+                        const maxValue = this.model.getParameterMaximumValue(parameterIndex);
+                        const scaledValue = minValue + (maxValue - minValue) * value;
+                        this.model.addParameterValueById(this.lipSyncIds.at(i), scaledValue, 0.8);
                     }
                 }
                 if (this.pose !== null && this.enablePose) {
@@ -24185,6 +25524,9 @@ class Live2DCubismModel extends Live2DCubismUserModel_1.Live2DCubismUserModel {
         this.setRandomExpression = () => {
             return this.expressionController.setRandomExpression();
         };
+        this.inputAudio = (wavBuffer) => {
+            this.wavController.start(wavBuffer);
+        };
         this.hitTest = (areaName, x, y) => {
             if (!this.loaded)
                 return;
@@ -24219,8 +25561,7 @@ class Live2DCubismModel extends Live2DCubismUserModel_1.Live2DCubismUserModel {
         this.zoomOut = (factor = 0.1) => {
             return this.cameraController.zoomOut(factor);
         };
-        this.cubismLoaded = false;
-        this.loaded = false;
+        this.canvas = canvas;
         this.motions = new csmmap_1.csmMap();
         this.expressions = new csmmap_1.csmMap();
         this.textures = new csmvector_1.csmVector();
@@ -24230,9 +25571,6 @@ class Live2DCubismModel extends Live2DCubismUserModel_1.Live2DCubismUserModel {
         this.projection = new cubismmatrix44_1.CubismMatrix44();
         this.deviceToScreen = new cubismmatrix44_1.CubismMatrix44();
         this.queueManager = new cubismmotionqueuemanager_1.CubismMotionQueueManager();
-        this.totalMotionCount = 0;
-        this.canvas = canvas;
-        this.needsResize = false;
         this.cubismCorePath = (_a = options.cubismCorePath) !== null && _a !== void 0 ? _a : "live2dcubismcore.min.js";
         this.mocConsistency = (_b = options.checkMocConsistency) !== null && _b !== void 0 ? _b : true;
         this.premultipliedAlpha = (_c = options.premultipliedAlpha) !== null && _c !== void 0 ? _c : true;
@@ -24244,33 +25582,52 @@ class Live2DCubismModel extends Live2DCubismUserModel_1.Live2DCubismUserModel {
         this.randomMotion = (_j = options.randomMotion) !== null && _j !== void 0 ? _j : true;
         this.paused = (_k = options.paused) !== null && _k !== void 0 ? _k : false;
         this.speed = (_l = options.speed) !== null && _l !== void 0 ? _l : 1;
+        if (options.maxTextureSize)
+            this.maxTextureSize = options.maxTextureSize;
         this.wavController = new WavFileController_1.WavFileController();
         this.touchController = new TouchController_1.TouchController(this);
         this.motionController = new MotionController_1.MotionController(this);
         this.expressionController = new ExpressionController_1.ExpressionController(this);
         this.cameraController = new CameraController_1.CameraController(this.canvas);
         this.webGLRenderer = new WebGLRenderer_1.WebGLRenderer(this);
-        this.cameraController.enableZoom = (_m = options.enableZoom) !== null && _m !== void 0 ? _m : true;
+        this.cameraController.zoomEnabled = (_m = options.zoomEnabled) !== null && _m !== void 0 ? _m : true;
         this.cameraController.enablePan = (_o = options.enablePan) !== null && _o !== void 0 ? _o : true;
         this.cameraController.minScale = (_p = options.minScale) !== null && _p !== void 0 ? _p : 0.1;
         this.cameraController.maxScale = (_q = options.maxScale) !== null && _q !== void 0 ? _q : 10;
         this.cameraController.panSpeed = (_r = options.panSpeed) !== null && _r !== void 0 ? _r : 1.5;
         this.cameraController.zoomStep = (_s = options.zoomStep) !== null && _s !== void 0 ? _s : 0.005;
-        this.enablePhysics = (_t = options.enablePhysics) !== null && _t !== void 0 ? _t : true;
-        this.enableBreath = (_u = options.enableBreath) !== null && _u !== void 0 ? _u : true;
-        this.enableEyeblink = (_v = options.enableEyeblink) !== null && _v !== void 0 ? _v : true;
-        this.enableLipsync = (_w = options.enableLipsync) !== null && _w !== void 0 ? _w : true;
-        this.enableMotion = (_x = options.enableMotion) !== null && _x !== void 0 ? _x : true;
-        this.enableExpression = (_y = options.enableExpression) !== null && _y !== void 0 ? _y : true;
-        this.enableMovement = (_z = options.enableMovement) !== null && _z !== void 0 ? _z : true;
-        this.enablePose = (_0 = options.enablePose) !== null && _0 !== void 0 ? _0 : true;
+        this.wavController.smoothingFactor = (_t = options.lipsyncSmoothing) !== null && _t !== void 0 ? _t : 0.1;
+        this.enablePhysics = (_u = options.enablePhysics) !== null && _u !== void 0 ? _u : true;
+        this.enableBreath = (_v = options.enableBreath) !== null && _v !== void 0 ? _v : true;
+        this.enableEyeblink = (_w = options.enableEyeblink) !== null && _w !== void 0 ? _w : true;
+        this.enableLipsync = (_x = options.enableLipsync) !== null && _x !== void 0 ? _x : true;
+        this.enableMotion = (_y = options.enableMotion) !== null && _y !== void 0 ? _y : true;
+        this.enableExpression = (_z = options.enableExpression) !== null && _z !== void 0 ? _z : true;
+        this.enableMovement = (_0 = options.enableMovement) !== null && _0 !== void 0 ? _0 : true;
+        this.enablePose = (_1 = options.enablePose) !== null && _1 !== void 0 ? _1 : true;
         this.updateTime();
     }
-    get enableZoom() {
-        return this.cameraController.enableZoom;
+    on(event, listener) {
+        if (!this.events[event]) {
+            this.events[event] = [];
+        }
+        this.events[event].push(listener);
     }
-    set enableZoom(enableZoom) {
-        this.cameraController.enableZoom = enableZoom;
+    emit(event, ...args) {
+        if (this.events[event]) {
+            this.events[event].forEach(listener => listener(...args));
+        }
+    }
+    off(event, listener) {
+        if (this.events[event]) {
+            this.events[event] = this.events[event].filter(l => l !== listener);
+        }
+    }
+    get zoomEnabled() {
+        return this.cameraController.zoomEnabled;
+    }
+    set zoomEnabled(zoomEnabled) {
+        this.cameraController.zoomEnabled = zoomEnabled;
     }
     get minScale() {
         return this.cameraController.minScale;
@@ -24314,6 +25671,12 @@ class Live2DCubismModel extends Live2DCubismUserModel_1.Live2DCubismUserModel {
     set y(y) {
         this.cameraController.y = y;
     }
+    get lipsyncSmoothing() {
+        return this.wavController.smoothingFactor;
+    }
+    set lipsyncSmoothing(lipsyncSmoothing) {
+        this.wavController.smoothingFactor = lipsyncSmoothing;
+    }
 }
 exports.Live2DCubismModel = Live2DCubismModel;
 
@@ -24331,20 +25694,41 @@ const cubismusermodel_1 = __webpack_require__("./framework/src/model/cubismuserm
 class Live2DCubismUserModel extends cubismusermodel_1.CubismUserModel {
     constructor() {
         super();
-        this.getParameterValue = (index) => {
+        this.getParameterValue = (parameter) => {
+            const index = this.parameters.ids.indexOf(parameter);
             return this.model.getParameterValueByIndex(index);
         };
-        this.setParameter = (index, value) => {
+        this.setParameter = (parameter, value) => {
+            const index = this.parameters.ids.indexOf(parameter);
             this.model.setParameterValueByIndex(index, value);
             this.model.update();
         };
-        this.getPartOpacity = (index) => {
+        this.resetParameters = () => {
+            for (let i = 0; i < this.parameters.defaultValues.length; i++) {
+                this.model.setParameterValueByIndex(i, this.parameters.defaultValues[i]);
+            }
+            this.model.update();
+        };
+        this.getPartOpacity = (part) => {
+            const index = this.parts.ids.indexOf(part);
             return this.model.getPartOpacityByIndex(index);
         };
-        this.setPartOpacity = (index, opacity) => {
+        this.setPartOpacity = (part, opacity) => {
+            const index = this.parts.ids.indexOf(part);
             this.model.setPartOpacityByIndex(index, opacity);
             this.model.update();
         };
+        this.resetPartOpacities = () => {
+            for (let i = 0; i < this.defaultPartOpacities.length; i++) {
+                this.model.setPartOpacityByIndex(i, this.defaultPartOpacities[i]);
+            }
+            this.model.update();
+        };
+    }
+    initialize() {
+        this.model.initialize();
+        // @ts-ignore
+        this.defaultPartOpacities = structuredClone(this.parts.opacities);
     }
     get accelerationX() {
         return this._accelerationX;
@@ -24530,7 +25914,6 @@ class MotionController {
     constructor(model) {
         this.load = async () => {
             const { motionGroups } = this.model.buffers;
-            this.model.model.saveParameters();
             for (let i = 0; i < motionGroups.length; i++) {
                 const group = motionGroups[i].group;
                 const motionBuffers = motionGroups[i].motionData.motionBuffers;
@@ -24551,13 +25934,12 @@ class MotionController {
                 }
             }
             this.model.motionManager.stopAllMotions();
-            this.model.model.loadParameters();
         };
         this.update = (deltaTime) => {
             let motionUpdated = false;
-            if (this.model.enableMotion) {
-                this.model.model.loadParameters();
-                if (this.model.motionManager.isFinished()) {
+            this.model.model.loadParameters();
+            if (this.model.motionManager.isFinished()) {
+                if (this.model.enableMotion) {
                     if (this.model.randomMotion) {
                         this.startRandomMotion(null, Live2DCubismModel_1.MotionPriority.Idle);
                     }
@@ -24565,11 +25947,11 @@ class MotionController {
                         this.startMotion("Idle", 1, Live2DCubismModel_1.MotionPriority.Idle);
                     }
                 }
-                else {
-                    motionUpdated = this.model.motionManager.updateMotion(this.model.model, deltaTime);
-                }
-                this.model.model.saveParameters();
             }
+            else {
+                motionUpdated = this.model.motionManager.updateMotion(this.model.model, deltaTime);
+            }
+            this.model.model.saveParameters();
             return motionUpdated;
         };
         this.stopMotions = () => {
@@ -24685,12 +26067,22 @@ class TouchController {
             this.model.setDragging(0, 0);
             const x = this.model.transformX(posX);
             const y = this.model.transformY(posY);
+        };
+        this.tap = (x, y) => {
             if (this.model.hitTest("Head", x, y)) {
                 this.model.setRandomExpression();
             }
             else if (this.model.hitTest("Body", x, y)) {
                 this.model.startRandomMotion("TapBody", Live2DCubismModel_1.MotionPriority.Normal);
             }
+            let hitAreas = [];
+            for (let i = 0; i < this.model.settings.getHitAreasCount(); i++) {
+                const drawId = this.model.settings.getHitAreaId(i);
+                if (this.model.isHit(drawId, x, y)) {
+                    hitAreas.push(drawId.getString().s);
+                }
+            }
+            this.model.emit("hit", hitAreas, x, y);
         };
         this.startInteractions = () => {
             if (!this.model.autoInteraction)
@@ -24718,33 +26110,10 @@ exports.TouchController = TouchController;
 /***/ }),
 
 /***/ "./renderer/WavFileController.ts":
-/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+/***/ ((__unused_webpack_module, exports) => {
 
 "use strict";
 
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
-    __setModuleDefault(result, mod);
-    return result;
-};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.WavFileController = void 0;
 class WavFileController {
@@ -24752,18 +26121,17 @@ class WavFileController {
         this.start = async (wavBuffer) => {
             this.sampleOffset = 0;
             this.userTime = 0;
-            this.lastRms = 0;
-            const wavDecoder = await Promise.resolve().then(() => __importStar(__webpack_require__("./node_modules/wav-file-decoder/dist/WavFileDecoder.js")));
-            const wav = wavDecoder.decodeWavFile(wavBuffer);
-            this.numChannels = wav.numberOfChannels;
-            this.bitsPerSample = wav.bitsPerSample;
-            this.sampleRate = wav.sampleRate;
-            this.samples = wav.channelData;
-            this.samplesPerChannel = this.samples.length / this.numChannels;
+            this.previousRms = 0;
+            this.rms = 0;
+            const decodedAudio = await this.audioContext.decodeAudioData(wavBuffer);
+            this.numChannels = decodedAudio.numberOfChannels;
+            this.sampleRate = decodedAudio.sampleRate;
+            this.samples = Array.from({ length: this.numChannels }, (v, i) => decodedAudio.getChannelData(i));
+            this.samplesPerChannel = decodedAudio.length;
         };
         this.update = (deltaTime) => {
             if (!this.samples || this.sampleOffset >= this.samplesPerChannel) {
-                this.lastRms = 0;
+                this.rms = 0;
                 return;
             }
             this.userTime += deltaTime;
@@ -24775,16 +26143,24 @@ class WavFileController {
                     rms += channel[i] ** 2;
                 }
             }
-            this.lastRms = Math.sqrt(rms / (this.numChannels * samplesToProcess));
+            this.rms = Math.sqrt(rms / (this.numChannels * samplesToProcess)) * 5;
+            this.rms = Math.max(0, Math.min(this.rms, 1));
+            if (this.smoothingFactor > 0) {
+                this.rms = this.previousRms * (1 - this.smoothingFactor) + this.rms * this.smoothingFactor;
+            }
+            this.previousRms = this.rms;
             this.sampleOffset = goalOffset;
         };
         this.samples = null;
-        this.lastRms = 0;
+        this.previousRms = 0;
+        this.rms = 0;
         this.sampleOffset = 0;
         this.userTime = 0;
+        this.smoothingFactor = 0.1;
+        this.audioContext = new AudioContext();
     }
     getRms() {
-        return this.lastRms;
+        return this.rms;
     }
 }
 exports.WavFileController = WavFileController;
@@ -24839,15 +26215,35 @@ class WebGLRenderer {
             this.model.getRenderer().startUp(gl);
         };
         this.loadTexture = (index, image) => {
+            var _a;
             const gl = this.model.canvas.getContext("webgl2");
+            const maxTextureSize = (_a = this.model.maxTextureSize) !== null && _a !== void 0 ? _a : gl.getParameter(gl.MAX_TEXTURE_SIZE);
+            let resized = image;
+            if (image.width > maxTextureSize || image.height > maxTextureSize) {
+                const canvas = document.createElement("canvas");
+                const ctx = canvas.getContext("2d");
+                const aspectRatio = image.width / image.height;
+                if (image.width > image.height) {
+                    canvas.width = maxTextureSize;
+                    canvas.height = maxTextureSize / aspectRatio;
+                }
+                else {
+                    canvas.height = maxTextureSize;
+                    canvas.width = maxTextureSize * aspectRatio;
+                }
+                ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+                resized = canvas;
+            }
             const tex = gl.createTexture();
             gl.bindTexture(gl.TEXTURE_2D, tex);
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
             if (this.model.premultipliedAlpha)
                 gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, 1);
-            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
-            gl.generateMipmap(gl.TEXTURE_2D);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, resized);
+            if ((resized.width & (resized.width - 1)) === 0 && (resized.height & (resized.height - 1)) === 0) {
+                gl.generateMipmap(gl.TEXTURE_2D);
+            }
             gl.bindTexture(gl.TEXTURE_2D, null);
             this.model.getRenderer().bindTexture(index, tex);
             this.model.getRenderer().setIsPremultipliedAlpha(this.model.premultipliedAlpha);
@@ -26229,234 +27625,6 @@ function _setPrototypeOf(o, p) {
 }
 module.exports = _setPrototypeOf, module.exports.__esModule = true, module.exports["default"] = module.exports;
 
-/***/ }),
-
-/***/ "./node_modules/wav-file-decoder/dist/WavFileDecoder.js":
-/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
-
-"use strict";
-__webpack_require__.r(__webpack_exports__);
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "decodeWavFile": () => (/* binding */ decodeWavFile),
-/* harmony export */   "getWavFileInfo": () => (/* binding */ getWavFileInfo),
-/* harmony export */   "isWavFile": () => (/* binding */ isWavFile)
-/* harmony export */ });
-function isWavFile(fileData) {
-    try {
-        const chunks = unpackWavFileChunks(fileData);
-        const fmt = decodeFormatChunk(chunks.get("fmt"));
-        const data = chunks.get("data");
-        void getWavFileType(fmt);
-        verifyDataChunkLength(data, fmt);
-        return true;
-    }
-    catch (e) {
-        return false;
-    }
-}
-const audioEncodingNames = ["int", "float"];
-const wavFileTypeAudioEncodings = [0, 0, 0, 1];
-function decodeWavFile(fileData) {
-    const chunks = unpackWavFileChunks(fileData);
-    const fmt = decodeFormatChunk(chunks.get("fmt"));
-    const data = chunks.get("data");
-    const wavFileType = getWavFileType(fmt);
-    const audioEncoding = wavFileTypeAudioEncodings[wavFileType];
-    const audioEncodingName = audioEncodingNames[audioEncoding];
-    const wavFileTypeName = audioEncodingName + fmt.bitsPerSample;
-    verifyDataChunkLength(data, fmt);
-    const channelData = decodeDataChunk(data, fmt, wavFileType);
-    return { channelData, sampleRate: fmt.sampleRate, numberOfChannels: fmt.numberOfChannels, audioEncoding, bitsPerSample: fmt.bitsPerSample, wavFileTypeName };
-}
-function unpackWavFileChunks(fileData) {
-    let dataView;
-    if (fileData instanceof ArrayBuffer) {
-        dataView = new DataView(fileData);
-    }
-    else {
-        dataView = new DataView(fileData.buffer, fileData.byteOffset, fileData.byteLength);
-    }
-    const fileLength = dataView.byteLength;
-    if (fileLength < 20) {
-        throw new Error("WAV file is too short.");
-    }
-    if (getString(dataView, 0, 4) != "RIFF") {
-        throw new Error("Not a valid WAV file (no RIFF header).");
-    }
-    const mainChunkLength = dataView.getUint32(4, true);
-    if (8 + mainChunkLength != fileLength) {
-        throw new Error(`Main chunk length of WAV file (${8 + mainChunkLength}) does not match file size (${fileLength}).`);
-    }
-    if (getString(dataView, 8, 4) != "WAVE") {
-        throw new Error("RIFF file is not a WAV file.");
-    }
-    const chunks = new Map();
-    let fileOffset = 12;
-    while (fileOffset < fileLength) {
-        if (fileOffset + 8 > fileLength) {
-            throw new Error(`Incomplete chunk prefix in WAV file at offset ${fileOffset}.`);
-        }
-        const chunkId = getString(dataView, fileOffset, 4).trim();
-        const chunkLength = dataView.getUint32(fileOffset + 4, true);
-        if (fileOffset + 8 + chunkLength > fileLength) {
-            throw new Error(`Incomplete chunk data in WAV file at offset ${fileOffset}.`);
-        }
-        const chunkData = new DataView(dataView.buffer, dataView.byteOffset + fileOffset + 8, chunkLength);
-        chunks.set(chunkId, chunkData);
-        const padLength = (chunkLength % 2);
-        fileOffset += 8 + chunkLength + padLength;
-    }
-    return chunks;
-}
-function getString(dataView, offset, length) {
-    const a = new Uint8Array(dataView.buffer, dataView.byteOffset + offset, length);
-    return String.fromCharCode.apply(null, a);
-}
-function getInt24(dataView, offset) {
-    const b0 = dataView.getInt8(offset + 2) * 0x10000;
-    const b12 = dataView.getUint16(offset, true);
-    return b0 + b12;
-}
-function decodeFormatChunk(dataView) {
-    if (!dataView) {
-        throw new Error("No format chunk found in WAV file.");
-    }
-    if (dataView.byteLength < 16) {
-        throw new Error("Format chunk of WAV file is too short.");
-    }
-    const fmt = {};
-    fmt.formatCode = dataView.getUint16(0, true);
-    fmt.numberOfChannels = dataView.getUint16(2, true);
-    fmt.sampleRate = dataView.getUint32(4, true);
-    fmt.bytesPerSec = dataView.getUint32(8, true);
-    fmt.bytesPerFrame = dataView.getUint16(12, true);
-    fmt.bitsPerSample = dataView.getUint16(14, true);
-    return fmt;
-}
-function getWavFileType(fmt) {
-    if (fmt.numberOfChannels < 1 || fmt.numberOfChannels > 999) {
-        throw new Error("Invalid number of channels in WAV file.");
-    }
-    const bytesPerSample = Math.ceil(fmt.bitsPerSample / 8);
-    const expectedBytesPerFrame = fmt.numberOfChannels * bytesPerSample;
-    if (fmt.formatCode == 1 && fmt.bitsPerSample >= 1 && fmt.bitsPerSample <= 8 && fmt.bytesPerFrame == expectedBytesPerFrame) {
-        return 0;
-    }
-    if (fmt.formatCode == 1 && fmt.bitsPerSample >= 9 && fmt.bitsPerSample <= 16 && fmt.bytesPerFrame == expectedBytesPerFrame) {
-        return 1;
-    }
-    if (fmt.formatCode == 1 && fmt.bitsPerSample >= 17 && fmt.bitsPerSample <= 24 && fmt.bytesPerFrame == expectedBytesPerFrame) {
-        return 2;
-    }
-    if (fmt.formatCode == 3 && fmt.bitsPerSample == 32 && fmt.bytesPerFrame == expectedBytesPerFrame) {
-        return 3;
-    }
-    throw new Error(`Unsupported WAV file type, formatCode=${fmt.formatCode}, bitsPerSample=${fmt.bitsPerSample}, bytesPerFrame=${fmt.bytesPerFrame}, numberOfChannels=${fmt.numberOfChannels}.`);
-}
-function decodeDataChunk(data, fmt, wavFileType) {
-    switch (wavFileType) {
-        case 0: return decodeDataChunk_uint8(data, fmt);
-        case 1: return decodeDataChunk_int16(data, fmt);
-        case 2: return decodeDataChunk_int24(data, fmt);
-        case 3: return decodeDataChunk_float32(data, fmt);
-        default: throw new Error("No decoder.");
-    }
-}
-function decodeDataChunk_int16(data, fmt) {
-    const channelData = allocateChannelDataArrays(data.byteLength, fmt);
-    const numberOfChannels = fmt.numberOfChannels;
-    const numberOfFrames = channelData[0].length;
-    let offs = 0;
-    for (let frameNo = 0; frameNo < numberOfFrames; frameNo++) {
-        for (let channelNo = 0; channelNo < numberOfChannels; channelNo++) {
-            const sampleValueInt = data.getInt16(offs, true);
-            const sampleValueFloat = sampleValueInt / 0x8000;
-            channelData[channelNo][frameNo] = sampleValueFloat;
-            offs += 2;
-        }
-    }
-    return channelData;
-}
-function decodeDataChunk_uint8(data, fmt) {
-    const channelData = allocateChannelDataArrays(data.byteLength, fmt);
-    const numberOfChannels = fmt.numberOfChannels;
-    const numberOfFrames = channelData[0].length;
-    let offs = 0;
-    for (let frameNo = 0; frameNo < numberOfFrames; frameNo++) {
-        for (let channelNo = 0; channelNo < numberOfChannels; channelNo++) {
-            const sampleValueInt = data.getUint8(offs);
-            const sampleValueFloat = (sampleValueInt - 0x80) / 0x80;
-            channelData[channelNo][frameNo] = sampleValueFloat;
-            offs += 1;
-        }
-    }
-    return channelData;
-}
-function decodeDataChunk_int24(data, fmt) {
-    const channelData = allocateChannelDataArrays(data.byteLength, fmt);
-    const numberOfChannels = fmt.numberOfChannels;
-    const numberOfFrames = channelData[0].length;
-    let offs = 0;
-    for (let frameNo = 0; frameNo < numberOfFrames; frameNo++) {
-        for (let channelNo = 0; channelNo < numberOfChannels; channelNo++) {
-            const sampleValueInt = getInt24(data, offs);
-            const sampleValueFloat = sampleValueInt / 0x800000;
-            channelData[channelNo][frameNo] = sampleValueFloat;
-            offs += 3;
-        }
-    }
-    return channelData;
-}
-function decodeDataChunk_float32(data, fmt) {
-    const channelData = allocateChannelDataArrays(data.byteLength, fmt);
-    const numberOfChannels = fmt.numberOfChannels;
-    const numberOfFrames = channelData[0].length;
-    let offs = 0;
-    for (let frameNo = 0; frameNo < numberOfFrames; frameNo++) {
-        for (let channelNo = 0; channelNo < numberOfChannels; channelNo++) {
-            const sampleValueFloat = data.getFloat32(offs, true);
-            channelData[channelNo][frameNo] = sampleValueFloat;
-            offs += 4;
-        }
-    }
-    return channelData;
-}
-function allocateChannelDataArrays(dataLength, fmt) {
-    const numberOfFrames = Math.floor(dataLength / fmt.bytesPerFrame);
-    const channelData = new Array(fmt.numberOfChannels);
-    for (let channelNo = 0; channelNo < fmt.numberOfChannels; channelNo++) {
-        channelData[channelNo] = new Float32Array(numberOfFrames);
-    }
-    return channelData;
-}
-function verifyDataChunkLength(data, fmt) {
-    if (!data) {
-        throw new Error("No data chunk found in WAV file.");
-    }
-    if (data.byteLength % fmt.bytesPerFrame != 0) {
-        throw new Error("WAV file data chunk length is not a multiple of frame size.");
-    }
-}
-function getWavFileInfo(fileData) {
-    const chunks = unpackWavFileChunks(fileData);
-    const chunkInfo = getChunkInfo(chunks);
-    const fmt = decodeFormatChunk(chunks.get("fmt"));
-    return { chunkInfo, fmt };
-}
-function getChunkInfo(chunks) {
-    const chunkInfo = [];
-    for (const e of chunks) {
-        const ci = {};
-        ci.chunkId = e[0];
-        ci.dataOffset = e[1].byteOffset;
-        ci.dataLength = e[1].byteLength;
-        chunkInfo.push(ci);
-    }
-    chunkInfo.sort((e1, e2) => e1.dataOffset - e2.dataOffset);
-    return chunkInfo;
-}
-
-
 /***/ })
 
 /******/ 	});
@@ -26547,7 +27715,7 @@ function getChunkInfo(chunks) {
 /******/ 	
 /******/ 	/* webpack/runtime/getFullHash */
 /******/ 	(() => {
-/******/ 		__webpack_require__.h = () => ("dbae505c71a6c067a0ad")
+/******/ 		__webpack_require__.h = () => ("7e09a5c56d9ed3f0dae9")
 /******/ 	})();
 /******/ 	
 /******/ 	/* webpack/runtime/global */
