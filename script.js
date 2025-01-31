@@ -4333,7 +4333,7 @@ module.exports = function (moduleId, options) {
 
 // extracted by mini-css-extract-plugin
     if(true) {
-      // 1738264376571
+      // 1738295564408
       var cssReload = __webpack_require__("./node_modules/mini-css-extract-plugin/dist/hmr/hotModuleReplacement.js")(module.id, {"hmr":true,"locals":false});
       module.hot.dispose(cssReload);
       module.hot.accept(undefined, cssReload);
@@ -4347,7 +4347,7 @@ module.exports = function (moduleId, options) {
 
 // extracted by mini-css-extract-plugin
     if(true) {
-      // 1738264376574
+      // 1738295564402
       var cssReload = __webpack_require__("./node_modules/mini-css-extract-plugin/dist/hmr/hotModuleReplacement.js")(module.id, {"hmr":true,"locals":false});
       module.hot.dispose(cssReload);
       module.hot.accept(undefined, cssReload);
@@ -4361,7 +4361,7 @@ module.exports = function (moduleId, options) {
 
 // extracted by mini-css-extract-plugin
     if(true) {
-      // 1738264376577
+      // 1738295564406
       var cssReload = __webpack_require__("./node_modules/mini-css-extract-plugin/dist/hmr/hotModuleReplacement.js")(module.id, {"hmr":true,"locals":false});
       module.hot.dispose(cssReload);
       module.hot.accept(undefined, cssReload);
@@ -4375,7 +4375,7 @@ module.exports = function (moduleId, options) {
 
 // extracted by mini-css-extract-plugin
     if(true) {
-      // 1738264376568
+      // 1738295564399
       var cssReload = __webpack_require__("./node_modules/mini-css-extract-plugin/dist/hmr/hotModuleReplacement.js")(module.id, {"hmr":true,"locals":false});
       module.hot.dispose(cssReload);
       module.hot.accept(undefined, cssReload);
@@ -9688,6 +9688,9 @@ const Live2DModel = (props) => {
         const live2DModel = new live2dcubism_1.Live2DCubismModel(rendererRef.current, { cubismCorePath });
         await live2DModel.load(model);
         setLive2D(live2DModel);
+        const snapshot = await live2DModel.takeScreenshot("png", true);
+        const buf = await fetch(snapshot).then((r) => r.blob());
+        console.log(URL.createObjectURL(buf));
     };
     (0, react_1.useEffect)(() => {
         load();
@@ -24924,7 +24927,7 @@ exports["default"] = Live2DCubismModel_1.Live2DCubismModel;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.CameraController = void 0;
 class CameraController {
-    constructor(canvas) {
+    constructor(model) {
         this.zoomIn = (factor = 0.1) => {
             if (!this.zoomEnabled)
                 return;
@@ -24959,8 +24962,8 @@ class CameraController {
             if (this.isPanning) {
                 const dx = event.clientX - this.lastPosition.x;
                 const dy = event.clientY - this.lastPosition.y;
-                this.x -= dx * this.panSpeed / this.canvas.width;
-                this.y += dy * this.panSpeed / this.canvas.height;
+                this.x -= dx * this.panSpeed / this.model.canvas.width;
+                this.y += dy * this.panSpeed / this.model.canvas.height;
                 this.lastPosition = { x: event.clientX, y: event.clientY };
             }
         };
@@ -24984,28 +24987,29 @@ class CameraController {
                 this.y = 0;
                 this.isPanning = false;
                 this.lastPosition = { x: 0, y: 0 };
+                this.model.centerModel();
             }
             if (this.zoomEnabled) {
                 this.scale = 1;
             }
         };
         this.addListeners = () => {
-            this.canvas.addEventListener("wheel", this.handleWheel);
-            this.canvas.addEventListener("mousedown", this.handleMouseDown);
+            this.model.canvas.addEventListener("wheel", this.handleWheel);
+            this.model.canvas.addEventListener("mousedown", this.handleMouseDown);
             window.addEventListener("mousemove", this.handleMouseMove);
             window.addEventListener("mouseup", this.handleMouseUp);
-            this.canvas.addEventListener("dblclick", this.handleDoubleClick);
-            this.canvas.addEventListener("contextmenu", (event) => event.preventDefault());
+            this.model.canvas.addEventListener("dblclick", this.handleDoubleClick);
+            this.model.canvas.addEventListener("contextmenu", (event) => event.preventDefault());
         };
         this.removeListeners = () => {
-            this.canvas.removeEventListener("wheel", this.handleWheel);
-            this.canvas.removeEventListener("mousedown", this.handleMouseDown);
+            this.model.canvas.removeEventListener("wheel", this.handleWheel);
+            this.model.canvas.removeEventListener("mousedown", this.handleMouseDown);
             window.removeEventListener("mousemove", this.handleMouseMove);
             window.removeEventListener("mouseup", this.handleMouseUp);
-            this.canvas.removeEventListener("dblclick", this.handleDoubleClick);
-            this.canvas.removeEventListener("contextmenu", (event) => event.preventDefault());
+            this.model.canvas.removeEventListener("dblclick", this.handleDoubleClick);
+            this.model.canvas.removeEventListener("contextmenu", (event) => event.preventDefault());
         };
-        this.canvas = canvas;
+        this.model = model;
         this.x = 0;
         this.y = 0;
         this.scale = 1;
@@ -25335,6 +25339,7 @@ class Live2DCubismModel extends Live2DCubismUserModel_1.Live2DCubismUserModel {
             this.webGLRenderer.start();
             this.resize();
             this.animationLoop();
+            this.centerModel();
         };
         this.loadTextures = async () => {
             const { textureImages } = this.buffers;
@@ -25551,15 +25556,57 @@ class Live2DCubismModel extends Live2DCubismUserModel_1.Live2DCubismUserModel {
             const screenY = this.deviceToScreen.transformY(pointY);
             return this.viewMatrix.invertTransformY(screenY);
         };
-        this.takeScreenshot = async (format = "png") => {
+        this.takeScreenshot = async (format = "png", faceCrop = false) => {
+            this.centerModel();
             this.update();
-            return this.canvas.toDataURL(`image/${format}`);
+            if (faceCrop) {
+                const clonedCanvas = document.createElement("canvas");
+                const cropSize = this.canvas.width / 4;
+                clonedCanvas.width = cropSize;
+                clonedCanvas.height = cropSize;
+                const ctx = clonedCanvas.getContext("2d");
+                const startX = (this.canvas.width - cropSize) / 2;
+                ctx.drawImage(this.canvas, startX, 0, cropSize, cropSize, 0, 0, cropSize, cropSize);
+                return clonedCanvas.toDataURL(`image/${format}`);
+            }
+            else {
+                return this.canvas.toDataURL(`image/${format}`);
+            }
         };
         this.zoomIn = (factor = 0.1) => {
             return this.cameraController.zoomIn(factor);
         };
         this.zoomOut = (factor = 0.1) => {
             return this.cameraController.zoomOut(factor);
+        };
+        this.centerModel = () => {
+            const savedX = this.x;
+            const savedScale = this.scale;
+            this.x = 0;
+            this.y = 0;
+            this.scale = 1;
+            this.update();
+            const clonedCanvas = document.createElement("canvas");
+            clonedCanvas.width = this.width;
+            clonedCanvas.height = this.height;
+            const ctx = clonedCanvas.getContext("2d");
+            ctx.drawImage(this.canvas, 0, 0, clonedCanvas.width, clonedCanvas.height);
+            const imageData = ctx.getImageData(0, 0, clonedCanvas.width, clonedCanvas.height).data;
+            let firstNonTransparentY = clonedCanvas.height;
+            for (let y = 0; y < clonedCanvas.height; y++) {
+                for (let x = 0; x < clonedCanvas.width; x++) {
+                    if (imageData[(y * clonedCanvas.width + x) * 4 + 3] !== 0) {
+                        firstNonTransparentY = y;
+                        break;
+                    }
+                }
+                if (firstNonTransparentY !== clonedCanvas.height)
+                    break;
+            }
+            let ratio = (firstNonTransparentY / clonedCanvas.height);
+            this.x = savedX;
+            this.y = -ratio * 1.8;
+            this.scale = savedScale;
         };
         this.canvas = canvas;
         this.motions = new csmmap_1.csmMap();
@@ -25588,7 +25635,7 @@ class Live2DCubismModel extends Live2DCubismUserModel_1.Live2DCubismUserModel {
         this.touchController = new TouchController_1.TouchController(this);
         this.motionController = new MotionController_1.MotionController(this);
         this.expressionController = new ExpressionController_1.ExpressionController(this);
-        this.cameraController = new CameraController_1.CameraController(this.canvas);
+        this.cameraController = new CameraController_1.CameraController(this);
         this.webGLRenderer = new WebGLRenderer_1.WebGLRenderer(this);
         this.cameraController.zoomEnabled = (_m = options.zoomEnabled) !== null && _m !== void 0 ? _m : true;
         this.cameraController.enablePan = (_o = options.enablePan) !== null && _o !== void 0 ? _o : true;
@@ -27715,7 +27762,7 @@ module.exports = _setPrototypeOf, module.exports.__esModule = true, module.expor
 /******/ 	
 /******/ 	/* webpack/runtime/getFullHash */
 /******/ 	(() => {
-/******/ 		__webpack_require__.h = () => ("7e09a5c56d9ed3f0dae9")
+/******/ 		__webpack_require__.h = () => ("9df9f4f3a39107b617a0")
 /******/ 	})();
 /******/ 	
 /******/ 	/* webpack/runtime/global */
