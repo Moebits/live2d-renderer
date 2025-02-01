@@ -4333,7 +4333,7 @@ module.exports = function (moduleId, options) {
 
 // extracted by mini-css-extract-plugin
     if(true) {
-      // 1738295564408
+      // 1738444066369
       var cssReload = __webpack_require__("./node_modules/mini-css-extract-plugin/dist/hmr/hotModuleReplacement.js")(module.id, {"hmr":true,"locals":false});
       module.hot.dispose(cssReload);
       module.hot.accept(undefined, cssReload);
@@ -4347,7 +4347,7 @@ module.exports = function (moduleId, options) {
 
 // extracted by mini-css-extract-plugin
     if(true) {
-      // 1738295564402
+      // 1738444066373
       var cssReload = __webpack_require__("./node_modules/mini-css-extract-plugin/dist/hmr/hotModuleReplacement.js")(module.id, {"hmr":true,"locals":false});
       module.hot.dispose(cssReload);
       module.hot.accept(undefined, cssReload);
@@ -4361,7 +4361,7 @@ module.exports = function (moduleId, options) {
 
 // extracted by mini-css-extract-plugin
     if(true) {
-      // 1738295564406
+      // 1738444066376
       var cssReload = __webpack_require__("./node_modules/mini-css-extract-plugin/dist/hmr/hotModuleReplacement.js")(module.id, {"hmr":true,"locals":false});
       module.hot.dispose(cssReload);
       module.hot.accept(undefined, cssReload);
@@ -4375,7 +4375,7 @@ module.exports = function (moduleId, options) {
 
 // extracted by mini-css-extract-plugin
     if(true) {
-      // 1738295564399
+      // 1738444066356
       var cssReload = __webpack_require__("./node_modules/mini-css-extract-plugin/dist/hmr/hotModuleReplacement.js")(module.id, {"hmr":true,"locals":false});
       module.hot.dispose(cssReload);
       module.hot.accept(undefined, cssReload);
@@ -9674,9 +9674,11 @@ const pause_png_1 = __importDefault(__webpack_require__("./assets/pause.png"));
 const play_png_1 = __importDefault(__webpack_require__("./assets/play.png"));
 const live2dcubism_1 = __webpack_require__("./live2dcubism.ts");
 __webpack_require__("./demo/components/styles/live2dmodel.less");
+const audioContext = new window.AudioContext();
 const Live2DModel = (props) => {
     const [ignored, forceUpdate] = (0, react_1.useReducer)(x => x + 1, 0);
     const { model, setModel } = (0, react_1.useContext)(demo_1.ModelContext);
+    const { audio, setAudio } = (0, react_1.useContext)(demo_1.AudioContext);
     const { live2D, setLive2D } = (0, react_1.useContext)(demo_1.Live2DContext);
     const [controlHover, setControlHover] = (0, react_1.useState)(false);
     const [speed, setSpeed] = (0, react_1.useState)(1);
@@ -9695,6 +9697,15 @@ const Live2DModel = (props) => {
     (0, react_1.useEffect)(() => {
         load();
     }, [model]);
+    const loadAudio = async () => {
+        if (!live2D || !audio)
+            return;
+        const arrayBuffer = await fetch(audio).then((r) => r.arrayBuffer());
+        live2D.inputAudio(arrayBuffer, true);
+    };
+    (0, react_1.useEffect)(() => {
+        loadAudio();
+    }, [live2D, audio]);
     (0, react_1.useEffect)(() => {
         if (!live2D)
             return;
@@ -9784,6 +9795,8 @@ const Parameters = (props) => {
     const { live2D, setLive2D } = (0, react_1.useContext)(demo_1.Live2DContext);
     const [defaultOpacities, setDefaultOpacities] = (0, react_1.useState)(new Float32Array());
     const [motionValues, setMotionValues] = (0, react_1.useState)([]);
+    const [motionButtonHover, setMotionButtonHover] = (0, react_1.useState)(false);
+    const [motionMode, setMotionMode] = (0, react_1.useState)("auto");
     (0, react_1.useEffect)(() => {
         if (live2D) {
             setDefaultOpacities(structuredClone(live2D.parts.opacities));
@@ -9796,6 +9809,19 @@ const Parameters = (props) => {
             loop();
         }
     }, [live2D]);
+    const toggleMotionMode = () => {
+        if (motionMode === "auto") {
+            setMotionMode("manual");
+        }
+        else {
+            setMotionMode("auto");
+        }
+    };
+    (0, react_1.useEffect)(() => {
+        if (!live2D)
+            return;
+        live2D.enableMotion = motionMode === "auto";
+    }, [motionMode]);
     const getParameterDialogJSX = () => {
         if (!live2D)
             return null;
@@ -9902,6 +9928,8 @@ const Parameters = (props) => {
             react_1.default.createElement("div", { className: "parameters-dialog-row-center" },
                 react_1.default.createElement("img", { draggable: false, className: "parameters-dialog-icon", src: motion_png_1.default }),
                 react_1.default.createElement("span", { className: "parameters-dialog-title" }, "Motions")),
+            react_1.default.createElement("div", { className: "parameters-dialog-row", style: { width: "max-content", marginLeft: "5px" } },
+                react_1.default.createElement("button", { className: "parameters-button", onClick: () => toggleMotionMode() }, motionMode === "auto" ? "Auto" : "Manual")),
             jsx));
     };
     return (react_1.default.createElement(react_1.default.Fragment, null,
@@ -9956,7 +9984,9 @@ const demo_1 = __webpack_require__("./demo/demo.tsx");
 __webpack_require__("./demo/components/styles/titlebar.less");
 const TitleBar = (props) => {
     const { model, setModel } = (0, react_1.useContext)(demo_1.ModelContext);
+    const { audio, setAudio } = (0, react_1.useContext)(demo_1.AudioContext);
     const [buttonHover, setButtonHover] = (0, react_1.useState)(false);
+    const [audioButtonHover, setAudioButtonHover] = (0, react_1.useState)(false);
     const uploadModel = async (event) => {
         var _a;
         const file = (_a = event.target.files) === null || _a === void 0 ? void 0 : _a[0];
@@ -9965,12 +9995,24 @@ const TitleBar = (props) => {
         const url = URL.createObjectURL(file);
         setModel(url);
     };
+    const uploadAudio = async (event) => {
+        var _a;
+        const file = (_a = event.target.files) === null || _a === void 0 ? void 0 : _a[0];
+        if (!file)
+            return;
+        const url = URL.createObjectURL(file);
+        setAudio(url);
+    };
     return (react_1.default.createElement("div", { className: "titlebar-container" },
         react_1.default.createElement("img", { draggable: false, className: "titlebar-logo", src: live2d_png_1.default }),
         react_1.default.createElement("label", { htmlFor: "file-upload", className: `upload-button ${buttonHover ? "upload-button-hover" : ""}`, onMouseEnter: () => setButtonHover(true), onMouseLeave: () => setButtonHover(false) },
             react_1.default.createElement("img", { draggable: false, className: "upload-button-img", src: uparrow_png_1.default }),
             react_1.default.createElement("span", { className: "upload-button-text" }, "Upload Model")),
-        react_1.default.createElement("input", { id: "file-upload", type: "file", onChange: (event) => uploadModel(event) })));
+        react_1.default.createElement("input", { id: "file-upload", type: "file", accept: ".zip", onChange: (event) => uploadModel(event) }),
+        react_1.default.createElement("label", { htmlFor: "audio-upload", className: `upload-button ${audioButtonHover ? "upload-button-hover" : ""}`, onMouseEnter: () => setAudioButtonHover(true), onMouseLeave: () => setAudioButtonHover(false) },
+            react_1.default.createElement("img", { draggable: false, className: "upload-button-img", src: uparrow_png_1.default }),
+            react_1.default.createElement("span", { className: "upload-button-text" }, "Upload Audio")),
+        react_1.default.createElement("input", { id: "audio-upload", type: "file", accept: ".wav,.mp3", onChange: (event) => uploadAudio(event) })));
 };
 exports["default"] = TitleBar;
 
@@ -10009,7 +10051,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.Live2DContext = exports.ModelContext = void 0;
+exports.Live2DContext = exports.AudioContext = exports.ModelContext = void 0;
 const react_1 = __importStar(__webpack_require__("./node_modules/react/index.js"));
 const react_dom_1 = __importDefault(__webpack_require__("./node_modules/react-dom/profiling.js"));
 const react_router_dom_1 = __webpack_require__("./node_modules/react-router-dom/esm/react-router-dom.js");
@@ -10019,16 +10061,19 @@ const Parameters_1 = __importDefault(__webpack_require__("./demo/components/Para
 __webpack_require__("./demo/demo.less");
 __webpack_require__("./assets sync recursive ^\\.\\/.*$");
 exports.ModelContext = react_1.default.createContext({ model: "", setModel: () => null });
+exports.AudioContext = react_1.default.createContext({ audio: "", setAudio: () => null });
 exports.Live2DContext = react_1.default.createContext({ live2D: null, setLive2D: () => null });
 const App = (props) => {
     const [model, setModel] = (0, react_1.useState)("assets/Hiyori.zip");
+    const [audio, setAudio] = (0, react_1.useState)("");
     const [live2D, setLive2D] = (0, react_1.useState)(null);
     return (react_1.default.createElement("div", { className: "app" },
-        react_1.default.createElement(exports.ModelContext.Provider, { value: { model, setModel } },
-            react_1.default.createElement(exports.Live2DContext.Provider, { value: { live2D, setLive2D } },
-                react_1.default.createElement(TitleBar_1.default, null),
-                react_1.default.createElement(Parameters_1.default, null),
-                react_1.default.createElement(Live2DModel_1.default, null)))));
+        react_1.default.createElement(exports.AudioContext.Provider, { value: { audio, setAudio } },
+            react_1.default.createElement(exports.ModelContext.Provider, { value: { model, setModel } },
+                react_1.default.createElement(exports.Live2DContext.Provider, { value: { live2D, setLive2D } },
+                    react_1.default.createElement(TitleBar_1.default, null),
+                    react_1.default.createElement(Parameters_1.default, null),
+                    react_1.default.createElement(Live2DModel_1.default, null))))));
 };
 react_dom_1.default.render(react_1.default.createElement(react_router_dom_1.BrowserRouter, null,
     react_1.default.createElement(App, null)), document.getElementById("root"));
@@ -24962,8 +25007,8 @@ class CameraController {
             if (this.isPanning) {
                 const dx = event.clientX - this.lastPosition.x;
                 const dy = event.clientY - this.lastPosition.y;
-                this.x -= dx * this.panSpeed / this.model.canvas.width;
-                this.y += dy * this.panSpeed / this.model.canvas.height;
+                this.x -= dx * this.panSpeed;
+                this.y -= dy * this.panSpeed;
                 this.lastPosition = { x: event.clientX, y: event.clientY };
             }
         };
@@ -24978,19 +25023,24 @@ class CameraController {
             event.preventDefault();
             const delta = event.deltaY;
             const scaleFactor = Math.pow(2, -delta * this.zoomStep);
-            this.scale *= scaleFactor;
-            this.scale = Math.max(this.minScale, Math.min(this.maxScale, this.scale));
+            const newScale = Math.max(this.minScale, Math.min(this.maxScale, this.scale * scaleFactor));
+            const bounds = this.model.canvas.getBoundingClientRect();
+            const mouseX = event.clientX - bounds.left;
+            const mouseY = event.clientY - bounds.top;
+            const worldX = (mouseX - this.x) / this.scale;
+            const worldY = (mouseY - this.y) / this.scale;
+            this.scale = newScale;
+            //this.x = mouseX - worldX * newScale
+            //this.y = mouseY - worldY * newScale
         };
         this.handleDoubleClick = () => {
-            if (this.enablePan) {
-                this.x = 0;
-                this.y = 0;
+            if (this.doubleClickReset) {
+                this.x = this.model.canvas.width / 2;
+                this.y = this.model.canvas.height / 2;
                 this.isPanning = false;
                 this.lastPosition = { x: 0, y: 0 };
-                this.model.centerModel();
-            }
-            if (this.zoomEnabled) {
                 this.scale = 1;
+                this.model.centerModel();
             }
         };
         this.addListeners = () => {
@@ -25010,15 +25060,15 @@ class CameraController {
             this.model.canvas.removeEventListener("contextmenu", (event) => event.preventDefault());
         };
         this.model = model;
-        this.x = 0;
-        this.y = 0;
+        this.x = model.canvas.width / 2;
+        this.y = model.canvas.height / 2;
         this.scale = 1;
         this.minScale = 0.1;
         this.maxScale = 10;
         this.isPanning = false;
         this.lastPosition = { x: 0, y: 0 };
         this.zoomStep = 0.005;
-        this.panSpeed = 1.5;
+        this.panSpeed = 1;
         this.addListeners();
     }
 }
@@ -25114,10 +25164,9 @@ var MotionPriority;
     MotionPriority[MotionPriority["Force"] = 3] = "Force";
 })(MotionPriority = exports.MotionPriority || (exports.MotionPriority = {}));
 let id = null;
-const isLive2DZip = async (link) => {
+const isLive2DZip = async (arrayBuffer) => {
     var _a;
-    let isZip = path_1.default.extname(link).replace(".", "") === "zip";
-    const arrayBuffer = await fetch(link).then(r => r.arrayBuffer());
+    let isZip = false;
     const result = ((_a = (0, magic_bytes_js_1.default)(new Uint8Array(arrayBuffer))) === null || _a === void 0 ? void 0 : _a[0]) || { mime: "" };
     if (result.mime === "application/zip")
         isZip = true;
@@ -25142,7 +25191,7 @@ const isLive2DZip = async (link) => {
 exports.isLive2DZip = isLive2DZip;
 class Live2DCubismModel extends Live2DCubismUserModel_1.Live2DCubismUserModel {
     constructor(canvas, options) {
-        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u, _v, _w, _x, _y, _z, _0, _1;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u, _v, _w, _x, _y, _z, _0, _1, _2, _3;
         if (!options)
             options = {};
         super();
@@ -25364,27 +25413,26 @@ class Live2DCubismModel extends Live2DCubismUserModel_1.Live2DCubismUserModel {
                 this.canvas.width = this.canvas.clientWidth ? this.canvas.clientWidth : this.canvas.width;
                 this.canvas.height = this.canvas.clientHeight ? this.canvas.clientHeight : this.canvas.height;
             }
-            const { width, height } = this.canvas;
-            const ratio = width / height;
-            const left = -ratio;
-            const right = ratio;
-            const bottom = -1;
-            const top = 1;
-            this.viewMatrix.setScreenRect(left, right, bottom, top);
+            const aspectRatio = this.canvas.width / this.canvas.height;
+            this.logicalLeft = -aspectRatio;
+            this.logicalRight = aspectRatio;
+            this.logicalBottom = -1;
+            this.logicalTop = 1;
+            this.viewMatrix.setScreenRect(this.logicalLeft, this.logicalRight, this.logicalBottom, this.logicalTop);
             this.viewMatrix.scale(1, 1);
             this.deviceToScreen.loadIdentity();
-            if (width > height) {
-                const screenW = Math.abs(right - left);
-                this.deviceToScreen.scaleRelative(screenW / width, -screenW / width);
+            if (this.canvas.width > this.canvas.height) {
+                const screenW = Math.abs(this.logicalRight - this.logicalLeft);
+                this.deviceToScreen.scaleRelative(screenW / this.canvas.width, -screenW / this.canvas.width);
             }
             else {
-                const screenH = Math.abs(top - bottom);
-                this.deviceToScreen.scaleRelative(screenH / height, -screenH / height);
+                const screenH = Math.abs(this.logicalTop - this.logicalBottom);
+                this.deviceToScreen.scaleRelative(screenH / this.canvas.height, -screenH / this.canvas.height);
             }
-            this.deviceToScreen.translateRelative(-width * 0.5, -height * 0.5);
+            this.deviceToScreen.translateRelative(-this.canvas.width * 0.5, -this.canvas.height * 0.5);
             this.viewMatrix.setMinScale(this.minScale);
             this.viewMatrix.setMaxScale(this.maxScale);
-            this.viewMatrix.setMaxScreenRect(this.logicalLeft, this.logicalRight, this.logicalLeft, this.logicalRight);
+            this.viewMatrix.setMaxScreenRect(this.logicalLeft, this.logicalRight, this.logicalBottom, this.logicalTop);
         };
         this.updateTime = () => {
             this.currentFrame = performance.now();
@@ -25393,7 +25441,9 @@ class Live2DCubismModel extends Live2DCubismUserModel_1.Live2DCubismUserModel {
         };
         this.updateCamera = () => {
             const { x, y, scale } = this.cameraController;
-            this.viewMatrix.translate(-x, -y);
+            const logicalX = this.logicalLeft + (x / this.canvas.width) * (this.logicalRight - this.logicalLeft);
+            const logicalY = this.logicalTop - (y / this.canvas.height) * (this.logicalTop - this.logicalBottom);
+            this.viewMatrix.translate(-logicalX, -logicalY);
             this.viewMatrix.scale(scale, scale);
         };
         this.updateProjection = () => {
@@ -25413,7 +25463,7 @@ class Live2DCubismModel extends Live2DCubismUserModel_1.Live2DCubismUserModel {
         };
         this.update = () => {
             var _a;
-            if (this.webGLRenderer.contextLost())
+            if (!this.model || this.webGLRenderer.contextLost())
                 return;
             this.updateTime();
             this.updateCamera();
@@ -25529,8 +25579,8 @@ class Live2DCubismModel extends Live2DCubismUserModel_1.Live2DCubismUserModel {
         this.setRandomExpression = () => {
             return this.expressionController.setRandomExpression();
         };
-        this.inputAudio = (wavBuffer) => {
-            this.wavController.start(wavBuffer);
+        this.inputAudio = (wavBuffer, playAudio = false, volume = 1.0) => {
+            return this.wavController.start(wavBuffer, playAudio, volume);
         };
         this.hitTest = (areaName, x, y) => {
             if (!this.loaded)
@@ -25580,33 +25630,29 @@ class Live2DCubismModel extends Live2DCubismUserModel_1.Live2DCubismUserModel {
             return this.cameraController.zoomOut(factor);
         };
         this.centerModel = () => {
-            const savedX = this.x;
-            const savedScale = this.scale;
-            this.x = 0;
-            this.y = 0;
-            this.scale = 1;
+            this.x = this.canvas.width / 2;
+            this.y = this.canvas.height / 2;
             this.update();
             const clonedCanvas = document.createElement("canvas");
-            clonedCanvas.width = this.width;
-            clonedCanvas.height = this.height;
+            clonedCanvas.width = this.canvas.width;
+            clonedCanvas.height = this.canvas.height;
             const ctx = clonedCanvas.getContext("2d");
             ctx.drawImage(this.canvas, 0, 0, clonedCanvas.width, clonedCanvas.height);
             const imageData = ctx.getImageData(0, 0, clonedCanvas.width, clonedCanvas.height).data;
             let firstNonTransparentY = clonedCanvas.height;
+            let lastNonTransparentY = 0;
             for (let y = 0; y < clonedCanvas.height; y++) {
                 for (let x = 0; x < clonedCanvas.width; x++) {
                     if (imageData[(y * clonedCanvas.width + x) * 4 + 3] !== 0) {
-                        firstNonTransparentY = y;
-                        break;
+                        firstNonTransparentY = Math.min(firstNonTransparentY, y);
+                        lastNonTransparentY = Math.max(lastNonTransparentY, y);
                     }
                 }
-                if (firstNonTransparentY !== clonedCanvas.height)
-                    break;
             }
-            let ratio = (firstNonTransparentY / clonedCanvas.height);
-            this.x = savedX;
-            this.y = -ratio * 1.8;
-            this.scale = savedScale;
+            const characterHeight = lastNonTransparentY - firstNonTransparentY;
+            let marginHeight = (this.canvas.height - characterHeight) / 4;
+            const ratio = (firstNonTransparentY / clonedCanvas.height);
+            this.y += (ratio * this.canvas.height) - marginHeight;
         };
         this.canvas = canvas;
         this.motions = new csmmap_1.csmMap();
@@ -25618,17 +25664,15 @@ class Live2DCubismModel extends Live2DCubismUserModel_1.Live2DCubismUserModel {
         this.projection = new cubismmatrix44_1.CubismMatrix44();
         this.deviceToScreen = new cubismmatrix44_1.CubismMatrix44();
         this.queueManager = new cubismmotionqueuemanager_1.CubismMotionQueueManager();
-        this.cubismCorePath = (_a = options.cubismCorePath) !== null && _a !== void 0 ? _a : "live2dcubismcore.min.js";
+        this.cubismCorePath = (_a = options.cubismCorePath) !== null && _a !== void 0 ? _a : "/live2dcubismcore.min.js";
         this.mocConsistency = (_b = options.checkMocConsistency) !== null && _b !== void 0 ? _b : true;
         this.premultipliedAlpha = (_c = options.premultipliedAlpha) !== null && _c !== void 0 ? _c : true;
-        this.logicalLeft = (_d = options.logicalLeft) !== null && _d !== void 0 ? _d : -2;
-        this.logicalRight = (_e = options.logicalRight) !== null && _e !== void 0 ? _e : 2;
-        this.autoAnimate = (_f = options.autoAnimate) !== null && _f !== void 0 ? _f : true;
-        this.autoInteraction = (_g = options.autoInteraction) !== null && _g !== void 0 ? _g : true;
-        this.keepAspect = (_h = options.keepAspect) !== null && _h !== void 0 ? _h : false;
-        this.randomMotion = (_j = options.randomMotion) !== null && _j !== void 0 ? _j : true;
-        this.paused = (_k = options.paused) !== null && _k !== void 0 ? _k : false;
-        this.speed = (_l = options.speed) !== null && _l !== void 0 ? _l : 1;
+        this.autoAnimate = (_d = options.autoAnimate) !== null && _d !== void 0 ? _d : true;
+        this.autoInteraction = (_e = options.autoInteraction) !== null && _e !== void 0 ? _e : true;
+        this.keepAspect = (_f = options.keepAspect) !== null && _f !== void 0 ? _f : false;
+        this.randomMotion = (_g = options.randomMotion) !== null && _g !== void 0 ? _g : true;
+        this.paused = (_h = options.paused) !== null && _h !== void 0 ? _h : false;
+        this.speed = (_j = options.speed) !== null && _j !== void 0 ? _j : 1;
         if (options.maxTextureSize)
             this.maxTextureSize = options.maxTextureSize;
         this.wavController = new WavFileController_1.WavFileController();
@@ -25637,21 +25681,25 @@ class Live2DCubismModel extends Live2DCubismUserModel_1.Live2DCubismUserModel {
         this.expressionController = new ExpressionController_1.ExpressionController(this);
         this.cameraController = new CameraController_1.CameraController(this);
         this.webGLRenderer = new WebGLRenderer_1.WebGLRenderer(this);
-        this.cameraController.zoomEnabled = (_m = options.zoomEnabled) !== null && _m !== void 0 ? _m : true;
-        this.cameraController.enablePan = (_o = options.enablePan) !== null && _o !== void 0 ? _o : true;
-        this.cameraController.minScale = (_p = options.minScale) !== null && _p !== void 0 ? _p : 0.1;
-        this.cameraController.maxScale = (_q = options.maxScale) !== null && _q !== void 0 ? _q : 10;
-        this.cameraController.panSpeed = (_r = options.panSpeed) !== null && _r !== void 0 ? _r : 1.5;
-        this.cameraController.zoomStep = (_s = options.zoomStep) !== null && _s !== void 0 ? _s : 0.005;
-        this.wavController.smoothingFactor = (_t = options.lipsyncSmoothing) !== null && _t !== void 0 ? _t : 0.1;
-        this.enablePhysics = (_u = options.enablePhysics) !== null && _u !== void 0 ? _u : true;
-        this.enableBreath = (_v = options.enableBreath) !== null && _v !== void 0 ? _v : true;
-        this.enableEyeblink = (_w = options.enableEyeblink) !== null && _w !== void 0 ? _w : true;
-        this.enableLipsync = (_x = options.enableLipsync) !== null && _x !== void 0 ? _x : true;
-        this.enableMotion = (_y = options.enableMotion) !== null && _y !== void 0 ? _y : true;
-        this.enableExpression = (_z = options.enableExpression) !== null && _z !== void 0 ? _z : true;
-        this.enableMovement = (_0 = options.enableMovement) !== null && _0 !== void 0 ? _0 : true;
-        this.enablePose = (_1 = options.enablePose) !== null && _1 !== void 0 ? _1 : true;
+        this.cameraController.zoomEnabled = (_k = options.zoomEnabled) !== null && _k !== void 0 ? _k : true;
+        this.cameraController.enablePan = (_l = options.enablePan) !== null && _l !== void 0 ? _l : true;
+        this.cameraController.doubleClickReset = (_m = options.doubleClickReset) !== null && _m !== void 0 ? _m : true;
+        this.cameraController.minScale = (_o = options.minScale) !== null && _o !== void 0 ? _o : 0.1;
+        this.cameraController.maxScale = (_p = options.maxScale) !== null && _p !== void 0 ? _p : 10;
+        this.cameraController.panSpeed = (_q = options.panSpeed) !== null && _q !== void 0 ? _q : 1;
+        this.cameraController.zoomStep = (_r = options.zoomStep) !== null && _r !== void 0 ? _r : 0.005;
+        this.cameraController.scale = (_s = options.scale) !== null && _s !== void 0 ? _s : 1;
+        this.cameraController.x = (_t = options.x) !== null && _t !== void 0 ? _t : this.canvas.width / 2;
+        this.cameraController.y = (_u = options.y) !== null && _u !== void 0 ? _u : this.canvas.height / 2;
+        this.wavController.smoothingFactor = (_v = options.lipsyncSmoothing) !== null && _v !== void 0 ? _v : 0.1;
+        this.enablePhysics = (_w = options.enablePhysics) !== null && _w !== void 0 ? _w : true;
+        this.enableBreath = (_x = options.enableBreath) !== null && _x !== void 0 ? _x : true;
+        this.enableEyeblink = (_y = options.enableEyeblink) !== null && _y !== void 0 ? _y : true;
+        this.enableLipsync = (_z = options.enableLipsync) !== null && _z !== void 0 ? _z : true;
+        this.enableMotion = (_0 = options.enableMotion) !== null && _0 !== void 0 ? _0 : true;
+        this.enableExpression = (_1 = options.enableExpression) !== null && _1 !== void 0 ? _1 : true;
+        this.enableMovement = (_2 = options.enableMovement) !== null && _2 !== void 0 ? _2 : true;
+        this.enablePose = (_3 = options.enablePose) !== null && _3 !== void 0 ? _3 : true;
         this.updateTime();
     }
     on(event, listener) {
@@ -25723,6 +25771,12 @@ class Live2DCubismModel extends Live2DCubismUserModel_1.Live2DCubismUserModel {
     }
     set lipsyncSmoothing(lipsyncSmoothing) {
         this.wavController.smoothingFactor = lipsyncSmoothing;
+    }
+    get doubleClickReset() {
+        return this.cameraController.doubleClickReset;
+    }
+    set doubleClickReset(doubleClickReset) {
+        this.cameraController.doubleClickReset = doubleClickReset;
     }
 }
 exports.Live2DCubismModel = Live2DCubismModel;
@@ -26165,16 +26219,37 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.WavFileController = void 0;
 class WavFileController {
     constructor() {
-        this.start = async (wavBuffer) => {
+        this.start = async (wavBuffer, playAudio = false, volume = 1.0) => {
             this.sampleOffset = 0;
             this.userTime = 0;
             this.previousRms = 0;
             this.rms = 0;
+            const cloneBufer = wavBuffer.slice(0);
             const decodedAudio = await this.audioContext.decodeAudioData(wavBuffer);
+            const cloneAudio = await this.audioContext.decodeAudioData(cloneBufer);
             this.numChannels = decodedAudio.numberOfChannels;
             this.sampleRate = decodedAudio.sampleRate;
             this.samples = Array.from({ length: this.numChannels }, (v, i) => decodedAudio.getChannelData(i));
             this.samplesPerChannel = decodedAudio.length;
+            if (playAudio)
+                await this.play(cloneAudio, volume);
+            return this.audioContext;
+        };
+        this.play = async (audioBuffer, volume = 1.0) => {
+            this.stop();
+            this.sourceNode = this.audioContext.createBufferSource();
+            this.sourceNode.buffer = audioBuffer;
+            this.sourceNode.connect(this.audioContext.destination);
+            this.volumeNode.gain.value = volume;
+            this.sourceNode.connect(this.volumeNode);
+            this.sourceNode.start(this.userTime);
+        };
+        this.stop = async () => {
+            if (this.sourceNode) {
+                this.sourceNode.stop();
+                this.sourceNode.disconnect();
+                this.sourceNode = null;
+            }
         };
         this.update = (deltaTime) => {
             if (!this.samples || this.sampleOffset >= this.samplesPerChannel) {
@@ -26205,6 +26280,9 @@ class WavFileController {
         this.userTime = 0;
         this.smoothingFactor = 0.1;
         this.audioContext = new AudioContext();
+        this.sourceNode = null;
+        this.volumeNode = this.audioContext.createGain();
+        this.volumeNode.connect(this.audioContext.destination);
     }
     getRms() {
         return this.rms;
@@ -27762,7 +27840,7 @@ module.exports = _setPrototypeOf, module.exports.__esModule = true, module.expor
 /******/ 	
 /******/ 	/* webpack/runtime/getFullHash */
 /******/ 	(() => {
-/******/ 		__webpack_require__.h = () => ("9df9f4f3a39107b617a0")
+/******/ 		__webpack_require__.h = () => ("abaff21b8b1620ee39ae")
 /******/ 	})();
 /******/ 	
 /******/ 	/* webpack/runtime/global */
