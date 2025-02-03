@@ -4333,7 +4333,7 @@ module.exports = function (moduleId, options) {
 
 // extracted by mini-css-extract-plugin
     if(true) {
-      // 1738609299472
+      // 1738621439371
       var cssReload = __webpack_require__("./node_modules/mini-css-extract-plugin/dist/hmr/hotModuleReplacement.js")(module.id, {"hmr":true,"locals":false});
       module.hot.dispose(cssReload);
       module.hot.accept(undefined, cssReload);
@@ -4347,7 +4347,7 @@ module.exports = function (moduleId, options) {
 
 // extracted by mini-css-extract-plugin
     if(true) {
-      // 1738609299475
+      // 1738621439368
       var cssReload = __webpack_require__("./node_modules/mini-css-extract-plugin/dist/hmr/hotModuleReplacement.js")(module.id, {"hmr":true,"locals":false});
       module.hot.dispose(cssReload);
       module.hot.accept(undefined, cssReload);
@@ -4361,7 +4361,7 @@ module.exports = function (moduleId, options) {
 
 // extracted by mini-css-extract-plugin
     if(true) {
-      // 1738609299488
+      // 1738621439373
       var cssReload = __webpack_require__("./node_modules/mini-css-extract-plugin/dist/hmr/hotModuleReplacement.js")(module.id, {"hmr":true,"locals":false});
       module.hot.dispose(cssReload);
       module.hot.accept(undefined, cssReload);
@@ -4375,7 +4375,7 @@ module.exports = function (moduleId, options) {
 
 // extracted by mini-css-extract-plugin
     if(true) {
-      // 1738609299461
+      // 1738621439355
       var cssReload = __webpack_require__("./node_modules/mini-css-extract-plugin/dist/hmr/hotModuleReplacement.js")(module.id, {"hmr":true,"locals":false});
       module.hot.dispose(cssReload);
       module.hot.accept(undefined, cssReload);
@@ -9684,7 +9684,13 @@ const Live2DModel = (props) => {
     const [speed, setSpeed] = (0, react_1.useState)(1);
     const [paused, setPaused] = (0, react_1.useState)(false);
     const [enableZoom, setEnableZoom] = (0, react_1.useState)(true);
+    const [canvasSize, setCanvasSize] = (0, react_1.useState)(Math.min(window.innerWidth, 700));
     const rendererRef = (0, react_1.useRef)(null);
+    (0, react_1.useEffect)(() => {
+        const handleResize = () => setCanvasSize(Math.min(window.innerWidth, 700));
+        window.addEventListener("resize", handleResize);
+        return () => window.removeEventListener("resize", handleResize);
+    }, []);
     const load = async () => {
         let cubismCorePath = "https://cubism.live2d.com/sdk-web/cubismcore/live2dcubismcore.min.js";
         const live2DModel = new live2dcubism_1.Live2DCubismModel(rendererRef.current, { cubismCorePath });
@@ -9737,7 +9743,7 @@ const Live2DModel = (props) => {
             react_1.default.createElement("img", { draggable: false, className: "live2d-control-icon", src: zoomin_png_1.default, onClick: () => live2D.zoomIn() }),
             react_1.default.createElement("img", { draggable: false, className: "live2d-control-icon", src: live2D.paused ? play_png_1.default : pause_png_1.default, onClick: () => setPaused((prev) => !prev) }),
             react_1.default.createElement("img", { draggable: false, className: "live2d-control-icon", src: speedIcon(), onClick: changeSpeed })) : null,
-        react_1.default.createElement("canvas", { ref: rendererRef, width: 700, height: 700 })));
+        react_1.default.createElement("canvas", { ref: rendererRef, width: canvasSize, height: canvasSize })));
 };
 exports["default"] = Live2DModel;
 
@@ -25477,17 +25483,17 @@ class Live2DCubismModel extends Live2DCubismUserModel_1.Live2DCubismUserModel {
                 this.needsResize = false;
             }
             this.model.saveParameters();
+            let motionUpdated = this.motionController.update(this.deltaTime);
+            this.expressionController.update(this.deltaTime);
             if (!this.paused) {
                 this.dragManager.update(this.deltaTime);
                 this.dragX = this.dragManager.getX();
                 this.dragY = this.dragManager.getY();
-                let motionUpdated = this.motionController.update(this.deltaTime);
                 if (!motionUpdated) {
                     if (this.eyeBlink !== null && this.enableEyeblink) {
                         this.eyeBlink.updateParameters(this.model, this.deltaTime);
                     }
                 }
-                this.expressionController.update(this.deltaTime);
                 if (this.enableMovement) {
                     const manager = (_a = live2dcubismframework_1.CubismFramework.getIdManager) === null || _a === void 0 ? void 0 : _a.call(live2dcubismframework_1.CubismFramework);
                     const paramAngleX = manager === null || manager === void 0 ? void 0 : manager.getId(cubismdefaultparameterid_1.CubismDefaultParameterId.ParamAngleX);
@@ -25545,6 +25551,8 @@ class Live2DCubismModel extends Live2DCubismUserModel_1.Live2DCubismUserModel {
             loop();
         };
         this.stopMotions = () => {
+            if (!this.loaded)
+                return;
             this.motionController.stopMotions();
         };
         this.startMotion = async (group, i, priority, onStartMotion, onEndMotion) => {
@@ -25677,7 +25685,7 @@ class Live2DCubismModel extends Live2DCubismUserModel_1.Live2DCubismUserModel {
         this.tapInteraction = (_f = options.tapInteraction) !== null && _f !== void 0 ? _f : true;
         this.keepAspect = (_g = options.keepAspect) !== null && _g !== void 0 ? _g : false;
         this.randomMotion = (_h = options.randomMotion) !== null && _h !== void 0 ? _h : true;
-        this.paused = (_j = options.paused) !== null && _j !== void 0 ? _j : false;
+        this._paused = (_j = options.paused) !== null && _j !== void 0 ? _j : false;
         this.speed = (_k = options.speed) !== null && _k !== void 0 ? _k : 1;
         this.audioContext = (_l = options.audioContext) !== null && _l !== void 0 ? _l : new AudioContext();
         if (options.maxTextureSize)
@@ -25793,6 +25801,14 @@ class Live2DCubismModel extends Live2DCubismUserModel_1.Live2DCubismUserModel {
     }
     set doubleClickReset(doubleClickReset) {
         this.cameraController.doubleClickReset = doubleClickReset;
+    }
+    get paused() {
+        return this._paused;
+    }
+    set paused(paused) {
+        if (paused)
+            this.stopMotions();
+        this._paused = paused;
     }
 }
 exports.Live2DCubismModel = Live2DCubismModel;
@@ -26056,7 +26072,7 @@ class MotionController {
             let motionUpdated = false;
             this.model.model.loadParameters();
             if (this.model.motionManager.isFinished()) {
-                if (this.model.enableMotion) {
+                if (!this.model.paused && this.model.enableMotion) {
                     if (this.model.randomMotion) {
                         this.startRandomMotion(null, Live2DCubismModel_1.MotionPriority.Idle);
                     }
@@ -26242,9 +26258,9 @@ class WavFileController {
             this.userTime = 0;
             this.previousRms = 0;
             this.rms = 0;
-            const cloneBufer = wavBuffer.slice(0);
+            const cloneBuffer = new Uint8Array(wavBuffer).slice().buffer;
             const decodedAudio = await this.model.audioContext.decodeAudioData(wavBuffer);
-            const cloneAudio = await this.model.audioContext.decodeAudioData(cloneBufer);
+            const cloneAudio = await this.model.audioContext.decodeAudioData(cloneBuffer);
             this.numChannels = decodedAudio.numberOfChannels;
             this.sampleRate = decodedAudio.sampleRate;
             this.samples = Array.from({ length: this.numChannels }, (v, i) => decodedAudio.getChannelData(i));
@@ -27861,7 +27877,7 @@ module.exports = _setPrototypeOf, module.exports.__esModule = true, module.expor
 /******/ 	
 /******/ 	/* webpack/runtime/getFullHash */
 /******/ 	(() => {
-/******/ 		__webpack_require__.h = () => ("563a53c6a6a12c380b3b")
+/******/ 		__webpack_require__.h = () => ("40d41cd604adf9351f14")
 /******/ 	})();
 /******/ 	
 /******/ 	/* webpack/runtime/global */

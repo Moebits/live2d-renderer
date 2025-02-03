@@ -43,6 +43,14 @@
   font-size: 23px;
   color: white;
 }
+@media screen and (max-width: 620px) {
+  .titlebar-container {
+    flex-direction: column;
+  }
+  .upload-button {
+    margin-top: 10px;
+  }
+}
 
 .live2d-model-container {
   position: relative;
@@ -91,7 +99,7 @@
 }
 .parameters-dialog-box {
   max-height: 400px;
-  width: 400px;
+  width: 340px;
   overflow: overlay;
   background-color: var(--parametersBG);
   border: 2px solid var(--highlight);
@@ -192,6 +200,29 @@
 .parameters-button:hover {
   background-color: white;
   color: var(--highlight);
+}
+@media screen and (max-width: 850px) {
+  .parameters-container {
+    top: 800px;
+  }
+  .parameters-container-right {
+    right: unset;
+    top: 1530px;
+    left: 50px;
+    padding-bottom: 20px;
+  }
+}
+@media screen and (max-width: 450px) {
+  .parameters-container {
+    top: 620px;
+    left: 25px;
+  }
+  .parameters-container-right {
+    right: unset;
+    top: 1350px;
+    left: 25px;
+    padding-bottom: 20px;
+  }
 }
 
 :root {
