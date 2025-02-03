@@ -4333,7 +4333,7 @@ module.exports = function (moduleId, options) {
 
 // extracted by mini-css-extract-plugin
     if(true) {
-      // 1738609270040
+      // 1738609299472
       var cssReload = __webpack_require__("./node_modules/mini-css-extract-plugin/dist/hmr/hotModuleReplacement.js")(module.id, {"hmr":true,"locals":false});
       module.hot.dispose(cssReload);
       module.hot.accept(undefined, cssReload);
@@ -4347,7 +4347,7 @@ module.exports = function (moduleId, options) {
 
 // extracted by mini-css-extract-plugin
     if(true) {
-      // 1738609270043
+      // 1738609299475
       var cssReload = __webpack_require__("./node_modules/mini-css-extract-plugin/dist/hmr/hotModuleReplacement.js")(module.id, {"hmr":true,"locals":false});
       module.hot.dispose(cssReload);
       module.hot.accept(undefined, cssReload);
@@ -4361,7 +4361,7 @@ module.exports = function (moduleId, options) {
 
 // extracted by mini-css-extract-plugin
     if(true) {
-      // 1738609270045
+      // 1738609299488
       var cssReload = __webpack_require__("./node_modules/mini-css-extract-plugin/dist/hmr/hotModuleReplacement.js")(module.id, {"hmr":true,"locals":false});
       module.hot.dispose(cssReload);
       module.hot.accept(undefined, cssReload);
@@ -4375,7 +4375,7 @@ module.exports = function (moduleId, options) {
 
 // extracted by mini-css-extract-plugin
     if(true) {
-      // 1738609270034
+      // 1738609299461
       var cssReload = __webpack_require__("./node_modules/mini-css-extract-plugin/dist/hmr/hotModuleReplacement.js")(module.id, {"hmr":true,"locals":false});
       module.hot.dispose(cssReload);
       module.hot.accept(undefined, cssReload);
@@ -9690,9 +9690,6 @@ const Live2DModel = (props) => {
         const live2DModel = new live2dcubism_1.Live2DCubismModel(rendererRef.current, { cubismCorePath });
         await live2DModel.load(model);
         setLive2D(live2DModel);
-        const snapshot = await live2DModel.takeScreenshot("png", true);
-        const buf = await fetch(snapshot).then((r) => r.blob());
-        console.log(URL.createObjectURL(buf));
     };
     (0, react_1.useEffect)(() => {
         load();
@@ -27864,7 +27861,7 @@ module.exports = _setPrototypeOf, module.exports.__esModule = true, module.expor
 /******/ 	
 /******/ 	/* webpack/runtime/getFullHash */
 /******/ 	(() => {
-/******/ 		__webpack_require__.h = () => ("3cf8a4b8144b2155d7d4")
+/******/ 		__webpack_require__.h = () => ("563a53c6a6a12c380b3b")
 /******/ 	})();
 /******/ 	
 /******/ 	/* webpack/runtime/global */
