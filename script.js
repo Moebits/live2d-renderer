@@ -4333,7 +4333,7 @@ module.exports = function (moduleId, options) {
 
 // extracted by mini-css-extract-plugin
     if(true) {
-      // 1738444066369
+      // 1738609270040
       var cssReload = __webpack_require__("./node_modules/mini-css-extract-plugin/dist/hmr/hotModuleReplacement.js")(module.id, {"hmr":true,"locals":false});
       module.hot.dispose(cssReload);
       module.hot.accept(undefined, cssReload);
@@ -4347,7 +4347,7 @@ module.exports = function (moduleId, options) {
 
 // extracted by mini-css-extract-plugin
     if(true) {
-      // 1738444066373
+      // 1738609270043
       var cssReload = __webpack_require__("./node_modules/mini-css-extract-plugin/dist/hmr/hotModuleReplacement.js")(module.id, {"hmr":true,"locals":false});
       module.hot.dispose(cssReload);
       module.hot.accept(undefined, cssReload);
@@ -4361,7 +4361,7 @@ module.exports = function (moduleId, options) {
 
 // extracted by mini-css-extract-plugin
     if(true) {
-      // 1738444066376
+      // 1738609270045
       var cssReload = __webpack_require__("./node_modules/mini-css-extract-plugin/dist/hmr/hotModuleReplacement.js")(module.id, {"hmr":true,"locals":false});
       module.hot.dispose(cssReload);
       module.hot.accept(undefined, cssReload);
@@ -4375,7 +4375,7 @@ module.exports = function (moduleId, options) {
 
 // extracted by mini-css-extract-plugin
     if(true) {
-      // 1738444066356
+      // 1738609270034
       var cssReload = __webpack_require__("./node_modules/mini-css-extract-plugin/dist/hmr/hotModuleReplacement.js")(module.id, {"hmr":true,"locals":false});
       module.hot.dispose(cssReload);
       module.hot.accept(undefined, cssReload);
@@ -24978,22 +24978,22 @@ class CameraController {
                 return;
             const zoomFactor = 1 + factor;
             const newScale = Math.min(this.scale * zoomFactor, this.maxScale);
-            const offsetX = this.x / this.scale;
-            const offsetY = this.x / this.scale;
+            const worldX = (this.x - this.model.canvas.width / 2) / this.scale;
+            const worldY = (this.y - this.model.canvas.height / 2) / this.scale;
             this.scale = newScale;
-            this.x = this.x - offsetX * newScale;
-            this.y = this.y - offsetY * newScale;
+            this.x = this.model.canvas.width / 2 + worldX * this.scale;
+            this.y = this.model.canvas.height / 2 + worldY * this.scale;
         };
         this.zoomOut = (factor = 0.1) => {
             if (!this.zoomEnabled)
                 return;
             const zoomFactor = 1 - factor;
             const newScale = Math.max(this.scale * zoomFactor, this.minScale);
-            const offsetX = this.x / this.scale;
-            const offsetY = this.x / this.scale;
+            const worldX = (this.x - this.model.canvas.width / 2) / this.scale;
+            const worldY = (this.y - this.model.canvas.height / 2) / this.scale;
             this.scale = newScale;
-            this.x = this.x - offsetX * newScale;
-            this.y = this.y - offsetY * newScale;
+            this.x = this.model.canvas.width / 2 + worldX * this.scale;
+            this.y = this.model.canvas.height / 2 + worldY * this.scale;
         };
         this.handleMouseDown = (event) => {
             if (!this.enablePan)
@@ -25023,15 +25023,15 @@ class CameraController {
             event.preventDefault();
             const delta = event.deltaY;
             const scaleFactor = Math.pow(2, -delta * this.zoomStep);
-            const newScale = Math.max(this.minScale, Math.min(this.maxScale, this.scale * scaleFactor));
+            const newScale = Math.max(this.minScale, Math.min(this.scale * scaleFactor, this.maxScale));
             const bounds = this.model.canvas.getBoundingClientRect();
-            const mouseX = event.clientX - bounds.left;
-            const mouseY = event.clientY - bounds.top;
+            const mouseX = bounds.width - (event.clientX - bounds.left);
+            const mouseY = bounds.height - (event.clientY - bounds.top);
             const worldX = (mouseX - this.x) / this.scale;
             const worldY = (mouseY - this.y) / this.scale;
             this.scale = newScale;
-            //this.x = mouseX - worldX * newScale
-            //this.y = mouseY - worldY * newScale
+            this.x = mouseX - worldX * newScale;
+            this.y = mouseY - worldY * newScale;
         };
         this.handleDoubleClick = () => {
             if (this.doubleClickReset) {
@@ -25191,7 +25191,7 @@ const isLive2DZip = async (arrayBuffer) => {
 exports.isLive2DZip = isLive2DZip;
 class Live2DCubismModel extends Live2DCubismUserModel_1.Live2DCubismUserModel {
     constructor(canvas, options) {
-        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u, _v, _w, _x, _y, _z, _0, _1, _2, _3;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u, _v, _w, _x, _y, _z, _0, _1, _2, _3, _4, _5, _6;
         if (!options)
             options = {};
         super();
@@ -25414,10 +25414,12 @@ class Live2DCubismModel extends Live2DCubismUserModel_1.Live2DCubismUserModel {
                 this.canvas.height = this.canvas.clientHeight ? this.canvas.clientHeight : this.canvas.height;
             }
             const aspectRatio = this.canvas.width / this.canvas.height;
-            this.logicalLeft = -aspectRatio;
-            this.logicalRight = aspectRatio;
-            this.logicalBottom = -1;
-            this.logicalTop = 1;
+            const logicalWidth = 2;
+            const logicalHeight = 2 / aspectRatio;
+            this.logicalLeft = -logicalWidth / 2;
+            this.logicalRight = logicalWidth / 2;
+            this.logicalBottom = -logicalHeight / 2;
+            this.logicalTop = logicalHeight / 2;
             this.viewMatrix.setScreenRect(this.logicalLeft, this.logicalRight, this.logicalBottom, this.logicalTop);
             this.viewMatrix.scale(1, 1);
             this.deviceToScreen.loadIdentity();
@@ -25443,18 +25445,21 @@ class Live2DCubismModel extends Live2DCubismUserModel_1.Live2DCubismUserModel {
             const { x, y, scale } = this.cameraController;
             const logicalX = this.logicalLeft + (x / this.canvas.width) * (this.logicalRight - this.logicalLeft);
             const logicalY = this.logicalTop - (y / this.canvas.height) * (this.logicalTop - this.logicalBottom);
-            this.viewMatrix.translate(-logicalX, -logicalY);
+            const centerX = (this.logicalLeft + this.logicalRight) / 2;
+            const centerY = (this.logicalTop + this.logicalBottom) / 2;
+            this.viewMatrix.translate(centerX - logicalX, centerY - logicalY);
             this.viewMatrix.scale(scale, scale);
         };
         this.updateProjection = () => {
             const { width, height } = this.canvas;
             const projection = new cubismmatrix44_1.CubismMatrix44();
+            const canvasAspect = width / height;
             if (this.model.getCanvasWidth() > 1 && width < height) {
                 this.modelMatrix.setWidth(2);
-                projection.scale(1, width / height);
+                projection.scale(1, canvasAspect);
             }
             else {
-                projection.scale(height / width, 1);
+                projection.scale(1 / canvasAspect, 1);
             }
             if (this.viewMatrix) {
                 projection.multiplyByMatrix(this.viewMatrix);
@@ -25579,8 +25584,11 @@ class Live2DCubismModel extends Live2DCubismUserModel_1.Live2DCubismUserModel {
         this.setRandomExpression = () => {
             return this.expressionController.setRandomExpression();
         };
-        this.inputAudio = (wavBuffer, playAudio = false, volume = 1.0) => {
-            return this.wavController.start(wavBuffer, playAudio, volume);
+        this.inputAudio = (wavBuffer, playAudio = false) => {
+            return this.wavController.start(wavBuffer, playAudio);
+        };
+        this.stopAudio = () => {
+            return this.wavController.stop();
         };
         this.hitTest = (areaName, x, y) => {
             if (!this.loaded)
@@ -25669,37 +25677,42 @@ class Live2DCubismModel extends Live2DCubismUserModel_1.Live2DCubismUserModel {
         this.premultipliedAlpha = (_c = options.premultipliedAlpha) !== null && _c !== void 0 ? _c : true;
         this.autoAnimate = (_d = options.autoAnimate) !== null && _d !== void 0 ? _d : true;
         this.autoInteraction = (_e = options.autoInteraction) !== null && _e !== void 0 ? _e : true;
-        this.keepAspect = (_f = options.keepAspect) !== null && _f !== void 0 ? _f : false;
-        this.randomMotion = (_g = options.randomMotion) !== null && _g !== void 0 ? _g : true;
-        this.paused = (_h = options.paused) !== null && _h !== void 0 ? _h : false;
-        this.speed = (_j = options.speed) !== null && _j !== void 0 ? _j : 1;
+        this.tapInteraction = (_f = options.tapInteraction) !== null && _f !== void 0 ? _f : true;
+        this.keepAspect = (_g = options.keepAspect) !== null && _g !== void 0 ? _g : false;
+        this.randomMotion = (_h = options.randomMotion) !== null && _h !== void 0 ? _h : true;
+        this.paused = (_j = options.paused) !== null && _j !== void 0 ? _j : false;
+        this.speed = (_k = options.speed) !== null && _k !== void 0 ? _k : 1;
+        this.audioContext = (_l = options.audioContext) !== null && _l !== void 0 ? _l : new AudioContext();
         if (options.maxTextureSize)
             this.maxTextureSize = options.maxTextureSize;
-        this.wavController = new WavFileController_1.WavFileController();
+        if (options.connectNode)
+            this.connectNode = options.connectNode;
+        this.wavController = new WavFileController_1.WavFileController(this);
         this.touchController = new TouchController_1.TouchController(this);
         this.motionController = new MotionController_1.MotionController(this);
         this.expressionController = new ExpressionController_1.ExpressionController(this);
         this.cameraController = new CameraController_1.CameraController(this);
         this.webGLRenderer = new WebGLRenderer_1.WebGLRenderer(this);
-        this.cameraController.zoomEnabled = (_k = options.zoomEnabled) !== null && _k !== void 0 ? _k : true;
-        this.cameraController.enablePan = (_l = options.enablePan) !== null && _l !== void 0 ? _l : true;
-        this.cameraController.doubleClickReset = (_m = options.doubleClickReset) !== null && _m !== void 0 ? _m : true;
-        this.cameraController.minScale = (_o = options.minScale) !== null && _o !== void 0 ? _o : 0.1;
-        this.cameraController.maxScale = (_p = options.maxScale) !== null && _p !== void 0 ? _p : 10;
-        this.cameraController.panSpeed = (_q = options.panSpeed) !== null && _q !== void 0 ? _q : 1;
-        this.cameraController.zoomStep = (_r = options.zoomStep) !== null && _r !== void 0 ? _r : 0.005;
-        this.cameraController.scale = (_s = options.scale) !== null && _s !== void 0 ? _s : 1;
-        this.cameraController.x = (_t = options.x) !== null && _t !== void 0 ? _t : this.canvas.width / 2;
-        this.cameraController.y = (_u = options.y) !== null && _u !== void 0 ? _u : this.canvas.height / 2;
-        this.wavController.smoothingFactor = (_v = options.lipsyncSmoothing) !== null && _v !== void 0 ? _v : 0.1;
-        this.enablePhysics = (_w = options.enablePhysics) !== null && _w !== void 0 ? _w : true;
-        this.enableBreath = (_x = options.enableBreath) !== null && _x !== void 0 ? _x : true;
-        this.enableEyeblink = (_y = options.enableEyeblink) !== null && _y !== void 0 ? _y : true;
-        this.enableLipsync = (_z = options.enableLipsync) !== null && _z !== void 0 ? _z : true;
-        this.enableMotion = (_0 = options.enableMotion) !== null && _0 !== void 0 ? _0 : true;
-        this.enableExpression = (_1 = options.enableExpression) !== null && _1 !== void 0 ? _1 : true;
-        this.enableMovement = (_2 = options.enableMovement) !== null && _2 !== void 0 ? _2 : true;
-        this.enablePose = (_3 = options.enablePose) !== null && _3 !== void 0 ? _3 : true;
+        this.cameraController.zoomEnabled = (_m = options.zoomEnabled) !== null && _m !== void 0 ? _m : true;
+        this.cameraController.enablePan = (_o = options.enablePan) !== null && _o !== void 0 ? _o : true;
+        this.cameraController.doubleClickReset = (_p = options.doubleClickReset) !== null && _p !== void 0 ? _p : true;
+        this.cameraController.minScale = (_q = options.minScale) !== null && _q !== void 0 ? _q : 0.1;
+        this.cameraController.maxScale = (_r = options.maxScale) !== null && _r !== void 0 ? _r : 10;
+        this.cameraController.panSpeed = (_s = options.panSpeed) !== null && _s !== void 0 ? _s : 1;
+        this.cameraController.zoomStep = (_t = options.zoomStep) !== null && _t !== void 0 ? _t : 0.005;
+        this.cameraController.scale = (_u = options.scale) !== null && _u !== void 0 ? _u : 1;
+        this.cameraController.x = (_v = options.x) !== null && _v !== void 0 ? _v : this.canvas.width / 2;
+        this.cameraController.y = (_w = options.y) !== null && _w !== void 0 ? _w : this.canvas.height / 2;
+        this.wavController.smoothingFactor = (_x = options.lipsyncSmoothing) !== null && _x !== void 0 ? _x : 0.1;
+        this.wavController.volumeNode.gain.value = (_y = options.volume) !== null && _y !== void 0 ? _y : 1;
+        this.enablePhysics = (_z = options.enablePhysics) !== null && _z !== void 0 ? _z : true;
+        this.enableBreath = (_0 = options.enableBreath) !== null && _0 !== void 0 ? _0 : true;
+        this.enableEyeblink = (_1 = options.enableEyeblink) !== null && _1 !== void 0 ? _1 : true;
+        this.enableLipsync = (_2 = options.enableLipsync) !== null && _2 !== void 0 ? _2 : true;
+        this.enableMotion = (_3 = options.enableMotion) !== null && _3 !== void 0 ? _3 : true;
+        this.enableExpression = (_4 = options.enableExpression) !== null && _4 !== void 0 ? _4 : true;
+        this.enableMovement = (_5 = options.enableMovement) !== null && _5 !== void 0 ? _5 : true;
+        this.enablePose = (_6 = options.enablePose) !== null && _6 !== void 0 ? _6 : true;
         this.updateTime();
     }
     on(event, listener) {
@@ -25771,6 +25784,12 @@ class Live2DCubismModel extends Live2DCubismUserModel_1.Live2DCubismUserModel {
     }
     set lipsyncSmoothing(lipsyncSmoothing) {
         this.wavController.smoothingFactor = lipsyncSmoothing;
+    }
+    get volume() {
+        return this.wavController.volumeNode.gain.value;
+    }
+    set volume(volume) {
+        this.wavController.volumeNode.gain.value = volume;
     }
     get doubleClickReset() {
         return this.cameraController.doubleClickReset;
@@ -26168,6 +26187,8 @@ class TouchController {
             this.model.setDragging(0, 0);
             const x = this.model.transformX(posX);
             const y = this.model.transformY(posY);
+            if (this.model.tapInteraction)
+                this.tap(x, y);
         };
         this.tap = (x, y) => {
             if (this.model.hitTest("Head", x, y)) {
@@ -26218,30 +26239,32 @@ exports.TouchController = TouchController;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.WavFileController = void 0;
 class WavFileController {
-    constructor() {
-        this.start = async (wavBuffer, playAudio = false, volume = 1.0) => {
+    constructor(model) {
+        this.start = async (wavBuffer, playAudio = false) => {
             this.sampleOffset = 0;
             this.userTime = 0;
             this.previousRms = 0;
             this.rms = 0;
             const cloneBufer = wavBuffer.slice(0);
-            const decodedAudio = await this.audioContext.decodeAudioData(wavBuffer);
-            const cloneAudio = await this.audioContext.decodeAudioData(cloneBufer);
+            const decodedAudio = await this.model.audioContext.decodeAudioData(wavBuffer);
+            const cloneAudio = await this.model.audioContext.decodeAudioData(cloneBufer);
             this.numChannels = decodedAudio.numberOfChannels;
             this.sampleRate = decodedAudio.sampleRate;
             this.samples = Array.from({ length: this.numChannels }, (v, i) => decodedAudio.getChannelData(i));
             this.samplesPerChannel = decodedAudio.length;
             if (playAudio)
-                await this.play(cloneAudio, volume);
-            return this.audioContext;
+                await this.play(cloneAudio);
         };
-        this.play = async (audioBuffer, volume = 1.0) => {
+        this.play = async (audioBuffer) => {
             this.stop();
-            this.sourceNode = this.audioContext.createBufferSource();
+            this.sourceNode = this.model.audioContext.createBufferSource();
             this.sourceNode.buffer = audioBuffer;
-            this.sourceNode.connect(this.audioContext.destination);
-            this.volumeNode.gain.value = volume;
-            this.sourceNode.connect(this.volumeNode);
+            if (this.model.connectNode) {
+                this.sourceNode.connect(this.model.connectNode);
+            }
+            else {
+                this.sourceNode.connect(this.volumeNode);
+            }
             this.sourceNode.start(this.userTime);
         };
         this.stop = async () => {
@@ -26273,16 +26296,17 @@ class WavFileController {
             this.previousRms = this.rms;
             this.sampleOffset = goalOffset;
         };
+        this.model = model;
         this.samples = null;
         this.previousRms = 0;
         this.rms = 0;
         this.sampleOffset = 0;
         this.userTime = 0;
         this.smoothingFactor = 0.1;
-        this.audioContext = new AudioContext();
         this.sourceNode = null;
-        this.volumeNode = this.audioContext.createGain();
-        this.volumeNode.connect(this.audioContext.destination);
+        this.volumeNode = this.model.audioContext.createGain();
+        this.volumeNode.gain.value = 1;
+        this.volumeNode.connect(this.model.audioContext.destination);
     }
     getRms() {
         return this.rms;
@@ -27840,7 +27864,7 @@ module.exports = _setPrototypeOf, module.exports.__esModule = true, module.expor
 /******/ 	
 /******/ 	/* webpack/runtime/getFullHash */
 /******/ 	(() => {
-/******/ 		__webpack_require__.h = () => ("abaff21b8b1620ee39ae")
+/******/ 		__webpack_require__.h = () => ("3cf8a4b8144b2155d7d4")
 /******/ 	})();
 /******/ 	
 /******/ 	/* webpack/runtime/global */
