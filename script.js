@@ -4333,7 +4333,7 @@ module.exports = function (moduleId, options) {
 
 // extracted by mini-css-extract-plugin
     if(true) {
-      // 1738621439371
+      // 1742001818079
       var cssReload = __webpack_require__("./node_modules/mini-css-extract-plugin/dist/hmr/hotModuleReplacement.js")(module.id, {"hmr":true,"locals":false});
       module.hot.dispose(cssReload);
       module.hot.accept(undefined, cssReload);
@@ -4347,7 +4347,7 @@ module.exports = function (moduleId, options) {
 
 // extracted by mini-css-extract-plugin
     if(true) {
-      // 1738621439368
+      // 1742001818076
       var cssReload = __webpack_require__("./node_modules/mini-css-extract-plugin/dist/hmr/hotModuleReplacement.js")(module.id, {"hmr":true,"locals":false});
       module.hot.dispose(cssReload);
       module.hot.accept(undefined, cssReload);
@@ -4361,7 +4361,7 @@ module.exports = function (moduleId, options) {
 
 // extracted by mini-css-extract-plugin
     if(true) {
-      // 1738621439373
+      // 1742001818073
       var cssReload = __webpack_require__("./node_modules/mini-css-extract-plugin/dist/hmr/hotModuleReplacement.js")(module.id, {"hmr":true,"locals":false});
       module.hot.dispose(cssReload);
       module.hot.accept(undefined, cssReload);
@@ -4375,7 +4375,7 @@ module.exports = function (moduleId, options) {
 
 // extracted by mini-css-extract-plugin
     if(true) {
-      // 1738621439355
+      // 1742001818070
       var cssReload = __webpack_require__("./node_modules/mini-css-extract-plugin/dist/hmr/hotModuleReplacement.js")(module.id, {"hmr":true,"locals":false});
       module.hot.dispose(cssReload);
       module.hot.accept(undefined, cssReload);
@@ -5545,7 +5545,7 @@ const delimiter = '-'; // '\x2D'
 
 /** Regular expressions */
 const regexPunycode = /^xn--/;
-const regexNonASCII = /[^\0-\x7E]/; // non-ASCII chars
+const regexNonASCII = /[^\0-\x7F]/; // Note: U+007F DEL is excluded too.
 const regexSeparators = /[\x2E\u3002\uFF0E\uFF61]/g; // RFC 3490 separators
 
 /** Error messages */
@@ -5580,11 +5580,11 @@ function error(type) {
  * item.
  * @returns {Array} A new array of values returned by the callback function.
  */
-function map(array, fn) {
+function map(array, callback) {
 	const result = [];
 	let length = array.length;
 	while (length--) {
-		result[length] = fn(array[length]);
+		result[length] = callback(array[length]);
 	}
 	return result;
 }
@@ -5596,22 +5596,22 @@ function map(array, fn) {
  * @param {String} domain The domain name or email address.
  * @param {Function} callback The function that gets called for every
  * character.
- * @returns {Array} A new string of characters returned by the callback
+ * @returns {String} A new string of characters returned by the callback
  * function.
  */
-function mapDomain(string, fn) {
-	const parts = string.split('@');
+function mapDomain(domain, callback) {
+	const parts = domain.split('@');
 	let result = '';
 	if (parts.length > 1) {
 		// In email addresses, only the domain name should be punycoded. Leave
 		// the local part (i.e. everything up to `@`) intact.
 		result = parts[0] + '@';
-		string = parts[1];
+		domain = parts[1];
 	}
 	// Avoid `split(regex)` for IE8 compatibility. See #17.
-	string = string.replace(regexSeparators, '\x2E');
-	const labels = string.split('.');
-	const encoded = map(labels, fn).join('.');
+	domain = domain.replace(regexSeparators, '\x2E');
+	const labels = domain.split('.');
+	const encoded = map(labels, callback).join('.');
 	return result + encoded;
 }
 
@@ -5660,7 +5660,7 @@ function ucs2decode(string) {
  * @param {Array} codePoints The array of numeric code points.
  * @returns {String} The new Unicode string (UCS-2).
  */
-const ucs2encode = array => String.fromCodePoint(...array);
+const ucs2encode = codePoints => String.fromCodePoint(...codePoints);
 
 /**
  * Converts a basic code point into a digit/integer.
@@ -5672,13 +5672,13 @@ const ucs2encode = array => String.fromCodePoint(...array);
  * the code point does not represent a value.
  */
 const basicToDigit = function(codePoint) {
-	if (codePoint - 0x30 < 0x0A) {
-		return codePoint - 0x16;
+	if (codePoint >= 0x30 && codePoint < 0x3A) {
+		return 26 + (codePoint - 0x30);
 	}
-	if (codePoint - 0x41 < 0x1A) {
+	if (codePoint >= 0x41 && codePoint < 0x5B) {
 		return codePoint - 0x41;
 	}
-	if (codePoint - 0x61 < 0x1A) {
+	if (codePoint >= 0x61 && codePoint < 0x7B) {
 		return codePoint - 0x61;
 	}
 	return base;
@@ -5758,7 +5758,7 @@ const decode = function(input) {
 		// which gets added to `i`. The overflow checking is easier
 		// if we increase `i` as we go, then subtract off its starting
 		// value at the end to obtain `delta`.
-		let oldi = i;
+		const oldi = i;
 		for (let w = 1, k = base; /* no condition */; k += base) {
 
 			if (index >= inputLength) {
@@ -5767,7 +5767,10 @@ const decode = function(input) {
 
 			const digit = basicToDigit(input.charCodeAt(index++));
 
-			if (digit >= base || digit > floor((maxInt - i) / w)) {
+			if (digit >= base) {
+				error('invalid-input');
+			}
+			if (digit > floor((maxInt - i) / w)) {
 				error('overflow');
 			}
 
@@ -5821,7 +5824,7 @@ const encode = function(input) {
 	input = ucs2decode(input);
 
 	// Cache the length.
-	let inputLength = input.length;
+	const inputLength = input.length;
 
 	// Initialize the state.
 	let n = initialN;
@@ -5835,7 +5838,7 @@ const encode = function(input) {
 		}
 	}
 
-	let basicLength = output.length;
+	const basicLength = output.length;
 	let handledCPCount = basicLength;
 
 	// `handledCPCount` is the number of code points that have been handled;
@@ -5872,7 +5875,7 @@ const encode = function(input) {
 			if (currentValue < n && ++delta > maxInt) {
 				error('overflow');
 			}
-			if (currentValue == n) {
+			if (currentValue === n) {
 				// Represent delta as a generalized variable-length integer.
 				let q = delta;
 				for (let k = base; /* no condition */; k += base) {
@@ -5889,7 +5892,7 @@ const encode = function(input) {
 				}
 
 				output.push(stringFromCharCode(digitToBasic(q, 0)));
-				bias = adapt(delta, handledCPCountPlusOne, handledCPCount == basicLength);
+				bias = adapt(delta, handledCPCountPlusOne, handledCPCount === basicLength);
 				delta = 0;
 				++handledCPCount;
 			}
@@ -5949,7 +5952,7 @@ const punycode = {
 	 * @memberOf punycode
 	 * @type String
 	 */
-	'version': '2.1.0',
+	'version': '2.3.1',
 	/**
 	 * An object of methods to convert from JavaScript's internal character
 	 * representation (UCS-2) to Unicode code points, and back.
@@ -9694,8 +9697,13 @@ const Live2DModel = (props) => {
     const load = async () => {
         let cubismCorePath = "https://cubism.live2d.com/sdk-web/cubismcore/live2dcubismcore.min.js";
         const live2DModel = new live2dcubism_1.Live2DCubismModel(rendererRef.current, { cubismCorePath });
+        live2DModel.canvas.width = 700;
+        live2DModel.canvas.height = 700;
         await live2DModel.load(model);
         setLive2D(live2DModel);
+        const newScale = 3;
+        //live2DModel.scale = newScale
+        //live2DModel.centerAndReposition()
     };
     (0, react_1.useEffect)(() => {
         load();
@@ -9830,11 +9838,13 @@ const Parameters = (props) => {
             return null;
         let jsx = [];
         let parameters = live2D.parameters;
+        let parameterNames = live2D.getParameterNames();
         const resetParameters = () => {
             live2D.resetParameters();
             forceUpdate();
         };
         for (let i = 0; i < parameters.ids.length; i++) {
+            const name = parameterNames[i];
             const id = parameters.ids[i];
             const value = parameters.values[i];
             const defaultValue = parameters.defaultValues[i];
@@ -9847,7 +9857,7 @@ const Parameters = (props) => {
                 forceUpdate();
             };
             jsx.push(react_1.default.createElement("div", { className: "parameters-dialog-row" },
-                react_1.default.createElement("span", { className: "parameters-dialog-text" }, id),
+                react_1.default.createElement("span", { className: "parameters-dialog-text" }, name),
                 react_1.default.createElement(react_slider_1.default, { className: "parameters-slider", trackClassName: "parameters-slider-track", thumbClassName: "parameters-slider-thumb", onChange: (value) => updateParameter(value), min: min, max: max, step: step, value: value })));
         }
         return (react_1.default.createElement("div", { className: "parameters-dialog-box" },
@@ -9863,11 +9873,13 @@ const Parameters = (props) => {
             return null;
         let jsx = [];
         let parts = live2D.parts;
+        let partNames = live2D.getPartNames();
         const resetParts = () => {
             live2D.resetPartOpacities();
             forceUpdate();
         };
         for (let i = 0; i < parts.ids.length; i++) {
+            const name = partNames[i];
             const id = parts.ids[i];
             const opacity = parts.opacities[i];
             const updateOpacity = (opacity) => {
@@ -9875,7 +9887,7 @@ const Parameters = (props) => {
                 forceUpdate();
             };
             jsx.push(react_1.default.createElement("div", { className: "parameters-dialog-row" },
-                react_1.default.createElement("span", { className: "parameters-dialog-text" }, id),
+                react_1.default.createElement("span", { className: "parameters-dialog-text" }, name),
                 react_1.default.createElement(react_slider_1.default, { className: "parameters-slider", trackClassName: "parameters-slider-track", thumbClassName: "parameters-slider-thumb", onChange: (opacity) => updateOpacity(opacity), min: 0, max: 1, step: 0.01, value: opacity })));
         }
         return (react_1.default.createElement("div", { className: "parts-dialog-box" },
@@ -15914,6 +15926,9 @@ class ACubismMotion {
         this._fadeOutSeconds = -1.0;
         this._weight = 1.0;
         this._offsetSeconds = 0.0; // 再生の開始時刻
+        this._isLoop = false; // ループするか
+        this._isLoopFadeIn = true; // ループ時にフェードインが有効かどうかのフラグ。初期値では有効。
+        this._previousLoopState = this._isLoop;
         this._firedEventValues = new csmvector_1.csmVector();
     }
     /**
@@ -15968,11 +15983,9 @@ class ACubismMotion {
         motionQueueEntry.setIsStarted(true);
         motionQueueEntry.setStartTime(userTimeSeconds - this._offsetSeconds); // モーションの開始時刻を記録
         motionQueueEntry.setFadeInStartTime(userTimeSeconds); // フェードインの開始時刻
-        const duration = this.getDuration();
         if (motionQueueEntry.getEndTime() < 0.0) {
             // 開始していないうちに終了設定している場合がある
-            motionQueueEntry.setEndTime(duration <= 0.0 ? -1 : motionQueueEntry.getStartTime() + duration);
-            // duration == -1 の場合はループする
+            this.adjustEndTime(motionQueueEntry);
         }
         // 再生開始コールバック
         if (motionQueueEntry._motion._onBeganMotion) {
@@ -16079,6 +16092,37 @@ class ACubismMotion {
         this._offsetSeconds = offsetSeconds;
     }
     /**
+     * ループ情報の設定
+     * @param loop ループ情報
+     */
+    setLoop(loop) {
+        this._isLoop = loop;
+    }
+    /**
+     * ループ情報の取得
+     * @return true ループする
+     * @return false ループしない
+     */
+    getLoop() {
+        return this._isLoop;
+    }
+    /**
+     * ループ時のフェードイン情報の設定
+     * @param loopFadeIn  ループ時のフェードイン情報
+     */
+    setLoopFadeIn(loopFadeIn) {
+        this._isLoopFadeIn = loopFadeIn;
+    }
+    /**
+     * ループ時のフェードイン情報の取得
+     *
+     * @return  true    する
+     * @return  false   しない
+     */
+    getLoopFadeIn() {
+        return this._isLoopFadeIn;
+    }
+    /**
      * モデルのパラメータ更新
      *
      * イベント発火のチェック。
@@ -16125,6 +16169,16 @@ class ACubismMotion {
      */
     getModelOpacityValue() {
         return 1.0;
+    }
+    /**
+     * 終了時刻の調整
+     * @param motionQueueEntry CubismMotionQueueManagerで管理されているモーション
+     */
+    adjustEndTime(motionQueueEntry) {
+        const duration = this.getDuration();
+        // duration == -1 の場合はループする
+        const endTime = duration <= 0.0 ? -1 : motionQueueEntry.getStartTime() + duration;
+        motionQueueEntry.setEndTime(endTime);
     }
 }
 exports.ACubismMotion = ACubismMotion;
@@ -16782,7 +16836,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.Live2DCubismFramework = exports.CubismMotion = void 0;
+exports.Live2DCubismFramework = exports.CubismMotion = exports.MotionBehavior = void 0;
 const live2dcubismframework_1 = __webpack_require__("./framework/src/live2dcubismframework.ts");
 const cubismmath_1 = __webpack_require__("./framework/src/math/cubismmath.ts");
 const csmstring_1 = __webpack_require__("./framework/src/type/csmstring.ts");
@@ -16911,7 +16965,7 @@ function steppedEvaluate(points, time) {
 function inverseSteppedEvaluate(points, time) {
     return points[1].value;
 }
-function evaluateCurve(motionData, index, time) {
+function evaluateCurve(motionData, index, time, isCorrection, endTime) {
     // Find segment to evaluate.
     const curve = motionData.curves.at(index);
     let target = -1;
@@ -16932,11 +16986,59 @@ function evaluateCurve(motionData, index, time) {
         }
     }
     if (target == -1) {
+        if (isCorrection && time < endTime) {
+            return correctEndPoint(motionData, totalSegmentCount - 1, motionData.segments.at(curve.baseSegmentIndex).basePointIndex, pointPosition, time, endTime);
+        }
         return motionData.points.at(pointPosition).value;
     }
     const segment = motionData.segments.at(target);
     return segment.evaluate(motionData.points.get(segment.basePointIndex), time);
 }
+/**
+ * 終点から始点への補正処理
+ * @param motionData
+ * @param segmentIndex
+ * @param beginIndex
+ * @param endIndex
+ * @param time
+ * @param endTime
+ * @returns
+ */
+function correctEndPoint(motionData, segmentIndex, beginIndex, endIndex, time, endTime) {
+    const motionPoint = [
+        new cubismmotioninternal_1.CubismMotionPoint(),
+        new cubismmotioninternal_1.CubismMotionPoint()
+    ];
+    {
+        const src = motionData.points.at(endIndex);
+        motionPoint[0].time = src.time;
+        motionPoint[0].value = src.value;
+    }
+    {
+        const src = motionData.points.at(beginIndex);
+        motionPoint[1].time = endTime;
+        motionPoint[1].value = src.value;
+    }
+    switch (motionData.segments.at(segmentIndex).segmentType) {
+        case cubismmotioninternal_1.CubismMotionSegmentType.CubismMotionSegmentType_Linear:
+        case cubismmotioninternal_1.CubismMotionSegmentType.CubismMotionSegmentType_Bezier:
+        default:
+            return linearEvaluate(motionPoint, time);
+        case cubismmotioninternal_1.CubismMotionSegmentType.CubismMotionSegmentType_Stepped:
+            return steppedEvaluate(motionPoint, time);
+        case cubismmotioninternal_1.CubismMotionSegmentType.CubismMotionSegmentType_InverseStepped:
+            return inverseSteppedEvaluate(motionPoint, time);
+    }
+}
+/**
+ * Enumerator for version control of Motion Behavior.
+ * For details, see the SDK Manual.
+ */
+var MotionBehavior;
+(function (MotionBehavior) {
+    MotionBehavior[MotionBehavior["MotionBehavior_V1"] = 0] = "MotionBehavior_V1";
+    MotionBehavior[MotionBehavior["MotionBehavior_V2"] = 1] = "MotionBehavior_V2";
+})(MotionBehavior = exports.MotionBehavior || (exports.MotionBehavior = {}));
 /**
  * モーションクラス
  *
@@ -16948,6 +17050,7 @@ class CubismMotion extends acubismmotion_1.ACubismMotion {
      */
     constructor() {
         super();
+        this._motionBehavior = MotionBehavior.MotionBehavior_V2;
         this._sourceFrameRate = 30.0;
         this._loopDurationSeconds = -1.0;
         this._isLoop = false; // trueから false へデフォルトを変更
@@ -17001,6 +17104,13 @@ class CubismMotion extends acubismmotion_1.ACubismMotion {
             this._modelCurveIdOpacity =
                 live2dcubismframework_1.CubismFramework.getIdManager().getId(IdNameOpacity);
         }
+        if (this._motionBehavior === MotionBehavior.MotionBehavior_V2) {
+            if (this._previousLoopState !== this._isLoop) {
+                // 終了時間を計算する
+                this.adjustEndTime(motionQueueEntry);
+                this._previousLoopState = this._isLoop;
+            }
+        }
         let timeOffsetSeconds = userTimeSeconds - motionQueueEntry.getStartTime();
         if (timeOffsetSeconds < 0.0) {
             timeOffsetSeconds = 0.0; // エラー回避
@@ -17030,9 +17140,14 @@ class CubismMotion extends acubismmotion_1.ACubismMotion {
         let c, parameterIndex;
         // 'Repeat' time as necessary.
         let time = timeOffsetSeconds;
+        let duration = this._motionData.duration;
+        const isCorrection = this._motionBehavior === MotionBehavior.MotionBehavior_V2 && this._isLoop;
         if (this._isLoop) {
-            while (time > this._motionData.duration) {
-                time -= this._motionData.duration;
+            if (this._motionBehavior === MotionBehavior.MotionBehavior_V2) {
+                duration += 1.0 / this._motionData.fps;
+            }
+            while (time > duration) {
+                time -= duration;
             }
         }
         const curves = this._motionData.curves;
@@ -17041,7 +17156,7 @@ class CubismMotion extends acubismmotion_1.ACubismMotion {
             curves.at(c).type ==
                 cubismmotioninternal_1.CubismMotionCurveTarget.CubismMotionCurveTarget_Model; ++c) {
             // Evaluate curve and call handler.
-            value = evaluateCurve(this._motionData, c, time);
+            value = evaluateCurve(this._motionData, c, time, isCorrection, duration);
             if (curves.at(c).id == this._modelCurveIdEyeBlink) {
                 eyeBlinkValue = value;
             }
@@ -17066,7 +17181,7 @@ class CubismMotion extends acubismmotion_1.ACubismMotion {
             }
             const sourceValue = model.getParameterValueByIndex(parameterIndex);
             // Evaluate curve and apply value.
-            value = evaluateCurve(this._motionData, c, time);
+            value = evaluateCurve(this._motionData, c, time, isCorrection, duration);
             if (eyeBlinkValue != Number.MAX_VALUE) {
                 for (let i = 0; i < this._eyeBlinkParameterIds.getSize() && i < maxTargetSize; ++i) {
                     if (this._eyeBlinkParameterIds.at(i) == curves.at(c).id) {
@@ -17156,16 +17271,12 @@ class CubismMotion extends acubismmotion_1.ACubismMotion {
                 continue;
             }
             // Evaluate curve and apply value.
-            value = evaluateCurve(this._motionData, c, time);
+            value = evaluateCurve(this._motionData, c, time, isCorrection, duration);
             model.setParameterValueByIndex(parameterIndex, value);
         }
-        if (timeOffsetSeconds >= this._motionData.duration) {
+        if (timeOffsetSeconds >= duration) {
             if (this._isLoop) {
-                motionQueueEntry.setStartTime(userTimeSeconds); // 最初の状態へ
-                if (this._isLoopFadeIn) {
-                    // ループ内でループ用フェードインが有効の時は、フェードイン設定し直し
-                    motionQueueEntry.setFadeInStartTime(userTimeSeconds);
-                }
+                this.updateForNextLoop(motionQueueEntry, userTimeSeconds, time);
             }
             else {
                 if (this._onFinishedMotion) {
@@ -17181,6 +17292,7 @@ class CubismMotion extends acubismmotion_1.ACubismMotion {
      * @param loop ループ情報
      */
     setIsLoop(loop) {
+        (0, cubismdebug_1.CubismLogWarning)('setIsLoop() is a deprecated function. Please use setLoop().');
         this._isLoop = loop;
     }
     /**
@@ -17189,6 +17301,7 @@ class CubismMotion extends acubismmotion_1.ACubismMotion {
      * @return false ループしない
      */
     isLoop() {
+        (0, cubismdebug_1.CubismLogWarning)('isLoop() is a deprecated function. Please use getLoop().');
         return this._isLoop;
     }
     /**
@@ -17196,6 +17309,7 @@ class CubismMotion extends acubismmotion_1.ACubismMotion {
      * @param loopFadeIn  ループ時のフェードイン情報
      */
     setIsLoopFadeIn(loopFadeIn) {
+        (0, cubismdebug_1.CubismLogWarning)('setIsLoopFadeIn() is a deprecated function. Please use setLoopFadeIn().');
         this._isLoopFadeIn = loopFadeIn;
     }
     /**
@@ -17205,7 +17319,24 @@ class CubismMotion extends acubismmotion_1.ACubismMotion {
      * @return  false   しない
      */
     isLoopFadeIn() {
+        (0, cubismdebug_1.CubismLogWarning)('isLoopFadeIn() is a deprecated function. Please use getLoopFadeIn().');
         return this._isLoopFadeIn;
+    }
+    /**
+     * Sets the version of the Motion Behavior.
+     *
+     * @param Specifies the version of the Motion Behavior.
+     */
+    setMotionBehavior(motionBehavior) {
+        this._motionBehavior = motionBehavior;
+    }
+    /**
+     * Gets the version of the Motion Behavior.
+     *
+     * @return Returns the version of the Motion Behavior.
+     */
+    getMotionBehavior() {
+        return this._motionBehavior;
     }
     /**
      * モーションの長さを取得する。
@@ -17296,6 +17427,35 @@ class CubismMotion extends acubismmotion_1.ACubismMotion {
     release() {
         this._motionData = void 0;
         this._motionData = null;
+    }
+    /**
+     *
+     * @param motionQueueEntry
+     * @param userTimeSeconds
+     * @param time
+     */
+    updateForNextLoop(motionQueueEntry, userTimeSeconds, time) {
+        switch (this._motionBehavior) {
+            case MotionBehavior.MotionBehavior_V2:
+            default:
+                motionQueueEntry.setStartTime(userTimeSeconds - time); // 最初の状態へ
+                if (this._isLoopFadeIn) {
+                    // ループ中でループ用フェードインが有効のときは、フェードイン設定し直し
+                    motionQueueEntry.setFadeInStartTime(userTimeSeconds - time);
+                }
+                if (this._onFinishedMotion !== null) {
+                    this._onFinishedMotion(this);
+                }
+                break;
+            case MotionBehavior.MotionBehavior_V1:
+                // 旧ループ処理
+                motionQueueEntry.setStartTime(userTimeSeconds); // 最初の状態へ
+                if (this._isLoopFadeIn) {
+                    // ループ中でループ用フェードインが有効のときは、フェードイン設定し直し
+                    motionQueueEntry.setFadeInStartTime(userTimeSeconds);
+                }
+                break;
+        }
     }
     /**
      * motion3.jsonをパースする。
@@ -24846,7 +25006,7 @@ const cubismjson_1 = __webpack_require__("./framework/src/utils/cubismjson.ts");
  */
 class CubismJsonExtension {
     static parseJsonObject(obj, map) {
-        Object.keys(obj).forEach((key) => {
+        Object.keys(obj).forEach(key => {
             if (typeof obj[key] == 'boolean') {
                 const convValue = Boolean(obj[key]);
                 map.put(key, new cubismjson_1.JsonBoolean(convValue));
@@ -24878,7 +25038,7 @@ class CubismJsonExtension {
     }
     static parseJsonArray(obj) {
         const arr = new cubismjson_1.JsonArray();
-        Object.keys(obj).forEach((key) => {
+        Object.keys(obj).forEach(key => {
             const convKey = Number(key);
             if (typeof convKey == 'number') {
                 if (typeof obj[key] == 'boolean') {
@@ -24940,12 +25100,9 @@ exports.CubismJsonExtension = CubismJsonExtension;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.isLive2DZip = exports.WebGLRenderer = exports.MotionController = exports.ExpressionController = exports.MotionPriority = exports.Live2DBuffers = exports.Live2DModelOptions = exports.TouchController = exports.CameraController = exports.WavFileController = exports.Live2DCubismUserModel = exports.Live2DCubismModel = void 0;
+exports.VTubeStudioJson = exports.CubismCDI3Json = exports.compressLive2DTextures = exports.isLive2DZip = exports.WebGLRenderer = exports.MotionController = exports.ExpressionController = exports.MotionPriority = exports.Live2DBuffers = exports.Live2DModelOptions = exports.TouchController = exports.CameraController = exports.WavFileController = exports.Live2DCubismUserModel = exports.Live2DCubismModel = void 0;
 const Live2DCubismModel_1 = __webpack_require__("./renderer/Live2DCubismModel.ts");
 Object.defineProperty(exports, "Live2DCubismModel", ({ enumerable: true, get: function () { return Live2DCubismModel_1.Live2DCubismModel; } }));
-Object.defineProperty(exports, "Live2DModelOptions", ({ enumerable: true, get: function () { return Live2DCubismModel_1.Live2DModelOptions; } }));
-Object.defineProperty(exports, "Live2DBuffers", ({ enumerable: true, get: function () { return Live2DCubismModel_1.Live2DBuffers; } }));
-Object.defineProperty(exports, "MotionPriority", ({ enumerable: true, get: function () { return Live2DCubismModel_1.MotionPriority; } }));
 const Live2DCubismUserModel_1 = __webpack_require__("./renderer/Live2DCubismUserModel.ts");
 Object.defineProperty(exports, "Live2DCubismUserModel", ({ enumerable: true, get: function () { return Live2DCubismUserModel_1.Live2DCubismUserModel; } }));
 const WavFileController_1 = __webpack_require__("./renderer/WavFileController.ts");
@@ -24960,8 +25117,15 @@ const TouchController_1 = __webpack_require__("./renderer/TouchController.ts");
 Object.defineProperty(exports, "TouchController", ({ enumerable: true, get: function () { return TouchController_1.TouchController; } }));
 const WebGLRenderer_1 = __webpack_require__("./renderer/WebGLRenderer.ts");
 Object.defineProperty(exports, "WebGLRenderer", ({ enumerable: true, get: function () { return WebGLRenderer_1.WebGLRenderer; } }));
+const types_1 = __webpack_require__("./renderer/types.ts");
+Object.defineProperty(exports, "Live2DModelOptions", ({ enumerable: true, get: function () { return types_1.Live2DModelOptions; } }));
+Object.defineProperty(exports, "Live2DBuffers", ({ enumerable: true, get: function () { return types_1.Live2DBuffers; } }));
+Object.defineProperty(exports, "MotionPriority", ({ enumerable: true, get: function () { return types_1.MotionPriority; } }));
+Object.defineProperty(exports, "CubismCDI3Json", ({ enumerable: true, get: function () { return types_1.CubismCDI3Json; } }));
+Object.defineProperty(exports, "VTubeStudioJson", ({ enumerable: true, get: function () { return types_1.VTubeStudioJson; } }));
 const Live2DCubismModel_2 = __webpack_require__("./renderer/Live2DCubismModel.ts");
 Object.defineProperty(exports, "isLive2DZip", ({ enumerable: true, get: function () { return Live2DCubismModel_2.isLive2DZip; } }));
+Object.defineProperty(exports, "compressLive2DTextures", ({ enumerable: true, get: function () { return Live2DCubismModel_2.compressLive2DTextures; } }));
 exports["default"] = Live2DCubismModel_1.Live2DCubismModel;
 
 
@@ -25062,6 +25226,10 @@ class CameraController {
             this.model.canvas.removeEventListener("dblclick", this.handleDoubleClick);
             this.model.canvas.removeEventListener("contextmenu", (event) => event.preventDefault());
         };
+        this.initListeners = () => {
+            this.removeListeners();
+            this.addListeners();
+        };
         this.model = model;
         this.x = model.canvas.width / 2;
         this.y = model.canvas.height / 2;
@@ -25072,7 +25240,6 @@ class CameraController {
         this.lastPosition = { x: 0, y: 0 };
         this.zoomStep = 0.005;
         this.panSpeed = 1;
-        this.addListeners();
     }
 }
 exports.CameraController = CameraController;
@@ -25093,7 +25260,7 @@ class ExpressionController {
         this.load = async () => {
             const { expressionBuffers } = this.model.buffers;
             for (let i = 0; i < expressionBuffers.length; i++) {
-                const name = this.model.settings.getExpressionName(i);
+                const name = this.model.expressionIds[i];
                 const expressionBuffer = expressionBuffers[i];
                 const motion = this.model.loadExpression(expressionBuffer, expressionBuffer.byteLength, name);
                 if (this.model.expressions.getValue(name) !== null) {
@@ -25137,7 +25304,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.Live2DCubismModel = exports.isLive2DZip = exports.MotionPriority = void 0;
+exports.Live2DCubismModel = exports.compressLive2DTextures = exports.isLive2DZip = void 0;
 const cubismmodelsettingjson_1 = __webpack_require__("./framework/src/cubismmodelsettingjson.ts");
 const cubismdefaultparameterid_1 = __webpack_require__("./framework/src/cubismdefaultparameterid.ts");
 const cubismeyeblink_1 = __webpack_require__("./framework/src/effect/cubismeyeblink.ts");
@@ -25159,13 +25326,6 @@ const WebGLRenderer_1 = __webpack_require__("./renderer/WebGLRenderer.ts");
 const magic_bytes_js_1 = __importDefault(__webpack_require__("./node_modules/magic-bytes.js/dist/index.js"));
 const jszip_1 = __importDefault(__webpack_require__("./node_modules/jszip/dist/jszip.min.js"));
 const path_1 = __importDefault(__webpack_require__("./node_modules/path-browserify/index.js"));
-var MotionPriority;
-(function (MotionPriority) {
-    MotionPriority[MotionPriority["None"] = 0] = "None";
-    MotionPriority[MotionPriority["Idle"] = 1] = "Idle";
-    MotionPriority[MotionPriority["Normal"] = 2] = "Normal";
-    MotionPriority[MotionPriority["Force"] = 3] = "Force";
-})(MotionPriority = exports.MotionPriority || (exports.MotionPriority = {}));
 let id = null;
 const isLive2DZip = async (arrayBuffer) => {
     var _a;
@@ -25192,6 +25352,50 @@ const isLive2DZip = async (arrayBuffer) => {
     return hasModel && hasMoc3 && hasTexture;
 };
 exports.isLive2DZip = isLive2DZip;
+const compressLive2DTextures = async (arrayBuffer, maxSize = 8192, quality = 0.9, returnSmaller = true) => {
+    var _a;
+    const result = ((_a = (0, magic_bytes_js_1.default)(new Uint8Array(arrayBuffer))) === null || _a === void 0 ? void 0 : _a[0]) || { mime: "" };
+    if (result.mime !== "application/zip")
+        return arrayBuffer;
+    const zip = await jszip_1.default.loadAsync(arrayBuffer);
+    const newZip = new jszip_1.default();
+    for (const [relativePath, file] of Object.entries(zip.files)) {
+        if (relativePath.startsWith("__MACOSX") || file.dir)
+            continue;
+        if (relativePath.match(/\.(png|jpg|webp|avif)$/)) {
+            const blob = await file.async("blob");
+            const image = await createImageBitmap(blob);
+            let newBlob = blob;
+            if (image.width > maxSize || image.height > maxSize) {
+                const canvas = document.createElement("canvas");
+                const ctx = canvas.getContext("2d");
+                const aspectRatio = image.width / image.height;
+                if (image.width > image.height) {
+                    canvas.width = maxSize;
+                    canvas.height = maxSize / aspectRatio;
+                }
+                else {
+                    canvas.height = maxSize;
+                    canvas.width = maxSize * aspectRatio;
+                }
+                ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+                newBlob = await new Promise(resolve => canvas.toBlob(resolve, blob.type, quality));
+            }
+            newZip.file(relativePath, newBlob);
+        }
+        else {
+            newZip.file(relativePath, await file.async("arraybuffer"));
+        }
+    }
+    const newBuffer = await newZip.generateAsync({ type: "arraybuffer" });
+    if (returnSmaller) {
+        return newBuffer.byteLength < arrayBuffer.byteLength ? newBuffer : arrayBuffer;
+    }
+    else {
+        return newBuffer;
+    }
+};
+exports.compressLive2DTextures = compressLive2DTextures;
 class Live2DCubismModel extends Live2DCubismUserModel_1.Live2DCubismUserModel {
     constructor(canvas, options) {
         var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u, _v, _w, _x, _y, _z, _0, _1, _2, _3, _4, _5, _6;
@@ -25203,20 +25407,36 @@ class Live2DCubismModel extends Live2DCubismUserModel_1.Live2DCubismUserModel {
         this.needsResize = false;
         this.loaded = false;
         this.cubismLoaded = false;
-        this.destroy = () => {
+        this.destroy = (destroyCubism = false) => {
             cancelAnimationFrame(id);
             this.motions.clear();
             this.expressions.clear();
             this.eyeBlinkIds.clear();
             this.lipSyncIds.clear();
             this.webGLRenderer.deleteTextures();
+            this.webGLRenderer.deleteShader();
             this.touchController.cancelInteractions();
             this.cameraController.removeListeners();
-            live2dcubismframework_1.CubismFramework.dispose();
+            this.expressionIds = [];
+            this.motionIds = [];
+            Object.keys(this.events).forEach(event => {
+                this.events[event] = [];
+            });
+            if (this.buffers) {
+                this.buffers.modelBuffer = null;
+                this.buffers.expressionBuffers = [];
+                this.buffers.physicsBuffer = null;
+                this.buffers.poseBuffer = null;
+                this.buffers.userDataBuffer = null;
+                this.buffers.motionGroups = [];
+                this.buffers.textureImages = [];
+            }
             this.buffers = null;
-            this.canvas = null;
             this.loaded = false;
             this.cubismLoaded = false;
+            this.model.release();
+            if (destroyCubism)
+                live2dcubismframework_1.CubismFramework.dispose();
         };
         this.loadCubismCore = async () => {
             await new Promise(async (resolve, reject) => {
@@ -25241,15 +25461,19 @@ class Live2DCubismModel extends Live2DCubismUserModel_1.Live2DCubismUserModel {
         };
         this.loadBuffers = async (link) => {
             var _a;
-            let isZip = path_1.default.extname(link).replace(".", "") === "zip";
-            const arrayBuffer = await fetch(link).then(r => r.arrayBuffer()).catch(() => new ArrayBuffer(0));
+            let isZip = false;
+            let arrayBuffer = link instanceof ArrayBuffer ? link : new ArrayBuffer(0);
+            if (typeof link === "string") {
+                isZip = path_1.default.extname(link).replace(".", "") === "zip";
+                arrayBuffer = await fetch(link).then(r => r.arrayBuffer()).catch(() => new ArrayBuffer(0));
+            }
             if (!arrayBuffer.byteLength)
                 return Promise.reject(`Failed to load ${link}`);
             const result = ((_a = (0, magic_bytes_js_1.default)(new Uint8Array(arrayBuffer))) === null || _a === void 0 ? void 0 : _a[0]) || { mime: "" };
             if (result.mime === "application/zip")
                 isZip = true;
             let files = {};
-            let basename = path_1.default.dirname(link);
+            let basename = link instanceof ArrayBuffer ? "." : path_1.default.dirname(link);
             if (isZip) {
                 const zip = await jszip_1.default.loadAsync(arrayBuffer);
                 this.size = arrayBuffer.byteLength;
@@ -25261,6 +25485,10 @@ class Live2DCubismModel extends Live2DCubismUserModel_1.Live2DCubismUserModel {
                     files[key] = contents;
                     if (!this.settings && key.endsWith("model3.json"))
                         this.settings = new cubismmodelsettingjson_1.CubismModelSettingJson(contents, contents.byteLength);
+                    if (!this.vtubeSettings && key.endsWith("vtube.json"))
+                        this.vtubeSettings = JSON.parse(await file.async("string"));
+                    if (!this.displayInfo && key.endsWith("cdi3.json"))
+                        this.displayInfo = JSON.parse(await file.async("string"));
                 }
             }
             else {
@@ -25306,16 +25534,36 @@ class Live2DCubismModel extends Live2DCubismUserModel_1.Live2DCubismUserModel {
             };
             const modelBuffer = await getBuffer(this.settings.getModelFileName());
             this.size = modelBuffer.byteLength;
-            const expressionBuffers = await getBufferArray(this.settings.getExpressionCount(), (i) => this.settings.getExpressionFileName(i));
             const physicsBuffer = await getBufferOptional(() => this.settings.getPhysicsFileName());
             const poseBuffer = await getBufferOptional(() => this.settings.getPoseFileName());
             const userDataBuffer = await getBufferOptional(() => this.settings.getUserDataFile());
+            const expressionBuffers = [];
+            if (this.settings.getExpressionCount()) {
+                expressionBuffers.push(...await getBufferArray(this.settings.getExpressionCount(), (i) => this.settings.getExpressionFileName(i)));
+                this.expressionIds = Array.from({ length: this.settings.getExpressionCount() }).map((_, i) => this.settings.getExpressionFileName(i));
+            }
+            else if (this.vtubeSettings) {
+                this.expressionIds = this.vtubeSettings.Hotkeys.filter((h) => h.Action === "ToggleExpression").map((e) => e.File);
+                expressionBuffers.push(...await getBufferArray(this.expressionIds.length, (i) => this.expressionIds[i]));
+            }
             const motionGroups = [];
-            for (let i = 0; i < this.settings.getMotionGroupCount(); i++) {
-                const group = this.settings.getMotionGroupName(i);
-                const motionBuffers = await getBufferArray(this.settings.getMotionCount(group), (i) => this.settings.getMotionFileName(group, i));
-                const wavBuffer = await getBufferOptional(() => this.settings.getMotionSoundFileName(group, i));
-                motionGroups.push({ group, motionData: { motionBuffers, wavBuffer } });
+            if (this.settings.getMotionGroupCount()) {
+                for (let i = 0; i < this.settings.getMotionGroupCount(); i++) {
+                    const group = this.settings.getMotionGroupName(i);
+                    const motionBuffers = await getBufferArray(this.settings.getMotionCount(group), (i) => this.settings.getMotionFileName(group, i));
+                    const wavBuffer = await getBufferOptional(() => this.settings.getMotionSoundFileName(group, i));
+                    motionGroups.push({ group, motionData: { motionBuffers, wavBuffer } });
+                    this.motionIds.push(...Array.from({ length: this.settings.getMotionCount(group) }).map((_, i) => `${group}_${i}`));
+                }
+            }
+            else if (this.vtubeSettings) {
+                const motions = [this.vtubeSettings.FileReferences.IdleAnimation];
+                motions.push(...this.vtubeSettings.Hotkeys.filter((h) => h.Action === "TriggerAnimation").map((e) => e.File));
+                for (let i = 0; i < motions.length; i++) {
+                    const buffer = await getBuffer(motions[i]);
+                    motionGroups.push({ group: motions[i], motionData: { motionBuffers: [buffer], wavBuffer: null } });
+                    this.motionIds.push(`${motions[i]}_0`);
+                }
             }
             const textureImages = [];
             for (let i = 0; i < this.settings.getTextureCount(); i++) {
@@ -25329,6 +25577,7 @@ class Live2DCubismModel extends Live2DCubismUserModel_1.Live2DCubismUserModel {
                     img.onload = () => resolve();
                     img.onerror = (err) => reject(err);
                 });
+                URL.revokeObjectURL(url);
                 textureImages.push(img);
             }
             this.buffers = { modelBuffer, expressionBuffers, physicsBuffer, poseBuffer, userDataBuffer, motionGroups, textureImages };
@@ -25339,6 +25588,8 @@ class Live2DCubismModel extends Live2DCubismUserModel_1.Live2DCubismUserModel {
             if (!this.cubismLoaded)
                 await this.initializeCubism();
             const { modelBuffer, physicsBuffer, poseBuffer, userDataBuffer } = await this.loadBuffers(link);
+            this.touchController.initInteractions();
+            this.cameraController.initListeners();
             this.loadModel(modelBuffer, this._mocConsistency);
             this.initialize();
             await this.expressionController.load();
@@ -25380,6 +25631,12 @@ class Live2DCubismModel extends Live2DCubismUserModel_1.Live2DCubismUserModel {
             const lipSyncCount = this.settings.getLipSyncParameterCount();
             for (let i = 0; i < lipSyncCount; ++i) {
                 this.lipSyncIds.pushBack(this.settings.getLipSyncParameterId(i));
+            }
+            if (!lipSyncCount) {
+                const index = this.parameters.ids.indexOf("ParamMouthOpenY");
+                if (index !== -1)
+                    this.lipSyncIds.pushBack(this.model.getParameterId(index));
+                this.lipsync = Boolean(this.lipSyncIds.getSize());
             }
             const layout = new csmmap_1.csmMap();
             this.settings.getLayoutMap(layout);
@@ -25562,26 +25819,13 @@ class Live2DCubismModel extends Live2DCubismUserModel_1.Live2DCubismUserModel {
             return this.motionController.startRandomMotion(group, priority, onStartMotion, onEndMotion);
         };
         this.getExpressions = () => {
-            let expressions = [];
-            const expressionCount = this.settings.getExpressionCount() || 0;
-            for (let i = 0; i < expressionCount; i++) {
-                const expression = this.settings.getExpressionName(i);
-                expressions.push(expression);
-            }
-            return expressions;
+            return this.expressionIds;
         };
         this.getMotions = () => {
-            let motions = [];
-            const motionGroupCount = this.settings.getMotionGroupCount() || 0;
-            for (let i = 0; i < motionGroupCount; i++) {
-                const group = this.settings.getMotionGroupName(i);
-                let motionCount = this.settings.getMotionCount(group) || 0;
-                for (let j = 0; j < motionCount; j++) {
-                    let name = `${group}_${j}`;
-                    motions.push(name);
-                }
-            }
-            return motions;
+            return this.motionIds;
+        };
+        this.hasLipsync = () => {
+            return this.lipsync;
         };
         this.setExpression = (expression) => {
             return this.expressionController.setExpression(expression);
@@ -25589,7 +25833,7 @@ class Live2DCubismModel extends Live2DCubismUserModel_1.Live2DCubismUserModel {
         this.setRandomExpression = () => {
             return this.expressionController.setRandomExpression();
         };
-        this.inputAudio = (wavBuffer, playAudio = false) => {
+        this.inputAudio = async (wavBuffer, playAudio = false) => {
             return this.wavController.start(wavBuffer, playAudio);
         };
         this.stopAudio = () => {
@@ -25667,9 +25911,83 @@ class Live2DCubismModel extends Live2DCubismUserModel_1.Live2DCubismUserModel {
             const ratio = (firstNonTransparentY / clonedCanvas.height);
             this.y += (ratio * this.canvas.height) - marginHeight;
         };
+        this.centerAndReposition = () => {
+            this.x = this.canvas.width / 2;
+            this.y = this.canvas.height / 2;
+            this.update();
+            const clonedCanvas = document.createElement("canvas");
+            clonedCanvas.width = this.canvas.width;
+            clonedCanvas.height = this.canvas.height;
+            const ctx = clonedCanvas.getContext("2d");
+            ctx.drawImage(this.canvas, 0, 0, clonedCanvas.width, clonedCanvas.height);
+            const imageData = ctx.getImageData(0, 0, clonedCanvas.width, clonedCanvas.height).data;
+            let firstNonTransparentY = clonedCanvas.height;
+            let lastNonTransparentY = 0;
+            for (let y = 0; y < clonedCanvas.height; y++) {
+                for (let x = 0; x < clonedCanvas.width; x++) {
+                    if (imageData[(y * clonedCanvas.width + x) * 4 + 3] !== 0) {
+                        firstNonTransparentY = Math.min(firstNonTransparentY, y);
+                        lastNonTransparentY = Math.max(lastNonTransparentY, y);
+                    }
+                }
+            }
+            const characterHeight = lastNonTransparentY - firstNonTransparentY;
+            const scaledHeight = characterHeight * this.scale;
+            this.y = (this.canvas.height / 2) - ((scaledHeight - characterHeight) / 2);
+            const margin = characterHeight * 0.1;
+            this.y -= -(firstNonTransparentY * this.scale * 2) - margin;
+        };
+        this.characterPosition = () => {
+            const savedX = this.x;
+            const savedY = this.y;
+            this.x = this.canvas.width / 2;
+            this.y = this.canvas.height / 2;
+            this.update();
+            const clonedCanvas = document.createElement("canvas");
+            clonedCanvas.width = this.canvas.width;
+            clonedCanvas.height = this.canvas.height;
+            const ctx = clonedCanvas.getContext("2d");
+            ctx.drawImage(this.canvas, 0, 0, clonedCanvas.width, clonedCanvas.height);
+            this.x = savedX;
+            this.y = savedY;
+            const imageData = ctx.getImageData(0, 0, clonedCanvas.width, clonedCanvas.height).data;
+            let firstNonTransparentY = clonedCanvas.height;
+            let lastNonTransparentY = 0;
+            for (let y = 0; y < clonedCanvas.height; y++) {
+                for (let x = 0; x < clonedCanvas.width; x++) {
+                    if (imageData[(y * clonedCanvas.width + x) * 4 + 3] !== 0) {
+                        firstNonTransparentY = Math.min(firstNonTransparentY, y);
+                        lastNonTransparentY = Math.max(lastNonTransparentY, y);
+                    }
+                }
+            }
+            const characterHeight = lastNonTransparentY - firstNonTransparentY;
+            const ratio = (firstNonTransparentY / clonedCanvas.height);
+            return { firstNonTransparentY, lastNonTransparentY, characterHeight, ratio };
+        };
+        this.getParameterName = (parameter) => {
+            var _a, _b;
+            if (!this.displayInfo)
+                return parameter;
+            return (_b = (_a = this.displayInfo.Parameters.find((p) => p.Id === parameter)) === null || _a === void 0 ? void 0 : _a.Name) !== null && _b !== void 0 ? _b : parameter;
+        };
+        this.getPartName = (part) => {
+            var _a, _b;
+            if (!this.displayInfo)
+                return part;
+            return (_b = (_a = this.displayInfo.Parts.find((p) => p.Id === part)) === null || _a === void 0 ? void 0 : _a.Name) !== null && _b !== void 0 ? _b : part;
+        };
+        this.getParameterNames = () => {
+            return this.parameters.ids.map((id) => this.getParameterName(id));
+        };
+        this.getPartNames = () => {
+            return this.parts.ids.map((id) => this.getPartName(id));
+        };
         this.canvas = canvas;
         this.motions = new csmmap_1.csmMap();
         this.expressions = new csmmap_1.csmMap();
+        this.expressionIds = [];
+        this.motionIds = [];
         this.textures = new csmvector_1.csmVector();
         this.eyeBlinkIds = new csmvector_1.csmVector();
         this.lipSyncIds = new csmvector_1.csmVector();
@@ -26042,7 +26360,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.MotionController = void 0;
 const cubismmotionqueuemanager_1 = __webpack_require__("./framework/src/motion/cubismmotionqueuemanager.ts");
 const acubismmotion_1 = __webpack_require__("./framework/src/motion/acubismmotion.ts");
-const Live2DCubismModel_1 = __webpack_require__("./renderer/Live2DCubismModel.ts");
+const types_1 = __webpack_require__("./renderer/types.ts");
 class MotionController {
     constructor(model) {
         this.load = async () => {
@@ -26074,10 +26392,10 @@ class MotionController {
             if (this.model.motionManager.isFinished()) {
                 if (!this.model.paused && this.model.enableMotion) {
                     if (this.model.randomMotion) {
-                        this.startRandomMotion(null, Live2DCubismModel_1.MotionPriority.Idle);
+                        this.startRandomMotion(null, types_1.MotionPriority.Idle);
                     }
                     else {
-                        this.startMotion("Idle", 1, Live2DCubismModel_1.MotionPriority.Idle);
+                        this.startMotion("Idle", 1, types_1.MotionPriority.Idle);
                     }
                 }
             }
@@ -26091,7 +26409,7 @@ class MotionController {
             this.model.motionManager.stopAllMotions();
         };
         this.startMotion = async (group, i, priority, onStartMotion, onEndMotion) => {
-            if (priority === Live2DCubismModel_1.MotionPriority.Force) {
+            if (priority === types_1.MotionPriority.Force) {
                 this.model.motionManager.setReservePriority(priority);
             }
             else if (!this.model.motionManager.reserveMotion(priority)) {
@@ -26123,13 +26441,15 @@ class MotionController {
             return this.model.motionManager.startMotionPriority(motion, autoDelete, priority);
         };
         this.startRandomMotion = async (group, priority, onStartMotion, onEndMotion) => {
+            var _a, _b;
             if (!this.model.loaded)
                 return;
+            const { motionGroups } = this.model.buffers;
             if (!group) {
-                const randGroup = Math.floor(Math.random() * this.model.settings.getMotionGroupCount());
-                group = this.model.settings.getMotionGroupName(randGroup);
+                const randGroup = Math.floor(Math.random() * motionGroups.length);
+                group = (_a = motionGroups[randGroup]) === null || _a === void 0 ? void 0 : _a.group;
             }
-            let motionCount = this.model.settings.getMotionCount(group);
+            let motionCount = (_b = motionGroups.find((g) => g.group === group)) === null || _b === void 0 ? void 0 : _b.motionData.motionBuffers.length;
             if (!motionCount)
                 return;
             const rand = Math.floor(Math.random() * motionCount);
@@ -26150,7 +26470,7 @@ exports.MotionController = MotionController;
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.TouchController = void 0;
-const Live2DCubismModel_1 = __webpack_require__("./renderer/Live2DCubismModel.ts");
+const types_1 = __webpack_require__("./renderer/types.ts");
 class TouchController {
     constructor(model) {
         this.touchStart = (posX, posY) => {
@@ -26208,7 +26528,7 @@ class TouchController {
                 this.model.setRandomExpression();
             }
             else if (this.model.hitTest("Body", x, y)) {
-                this.model.startRandomMotion("TapBody", Live2DCubismModel_1.MotionPriority.Normal);
+                this.model.startRandomMotion("TapBody", types_1.MotionPriority.Normal);
             }
             let hitAreas = [];
             for (let i = 0; i < this.model.settings.getHitAreasCount(); i++) {
@@ -26233,10 +26553,13 @@ class TouchController {
             document.removeEventListener("pointerup", this.pointerUp);
             document.removeEventListener("pointercancel", this.pointerUp);
         };
+        this.initInteractions = () => {
+            this.cancelInteractions();
+            this.startInteractions();
+        };
         this.model = model;
         this.startX = this.startY = 0;
         this.lastX = this.lastY = 0;
-        this.startInteractions();
     }
 }
 exports.TouchController = TouchController;
@@ -26258,9 +26581,22 @@ class WavFileController {
             this.userTime = 0;
             this.previousRms = 0;
             this.rms = 0;
-            const cloneBuffer = new Uint8Array(wavBuffer).slice().buffer;
-            const decodedAudio = await this.model.audioContext.decodeAudioData(wavBuffer);
-            const cloneAudio = await this.model.audioContext.decodeAudioData(cloneBuffer);
+            let decodedAudio = null;
+            let cloneAudio = null;
+            if (wavBuffer instanceof AudioBuffer) {
+                decodedAudio = wavBuffer;
+                const offlineContext = new OfflineAudioContext(wavBuffer.numberOfChannels, wavBuffer.length, wavBuffer.sampleRate);
+                const bufferSource = offlineContext.createBufferSource();
+                bufferSource.buffer = wavBuffer;
+                bufferSource.connect(offlineContext.destination);
+                bufferSource.start();
+                cloneAudio = await offlineContext.startRendering();
+            }
+            else {
+                const cloneBuffer = new Uint8Array(wavBuffer).slice().buffer;
+                decodedAudio = await this.model.audioContext.decodeAudioData(wavBuffer);
+                cloneAudio = await this.model.audioContext.decodeAudioData(cloneBuffer);
+            }
             this.numChannels = decodedAudio.numberOfChannels;
             this.sampleRate = decodedAudio.sampleRate;
             this.samples = Array.from({ length: this.numChannels }, (v, i) => decodedAudio.getChannelData(i));
@@ -26278,7 +26614,10 @@ class WavFileController {
             else {
                 this.sourceNode.connect(this.volumeNode);
             }
-            this.sourceNode.start(this.userTime);
+            return new Promise((resolve) => {
+                this.sourceNode.onended = () => resolve();
+                this.sourceNode.start(this.userTime);
+            });
         };
         this.stop = async () => {
             if (this.sourceNode) {
@@ -26371,6 +26710,10 @@ class WebGLRenderer {
             gl.linkProgram(shader);
             gl.useProgram(shader);
             return shader;
+        };
+        this.deleteShader = () => {
+            const gl = this.model.canvas.getContext("webgl2");
+            gl.deleteProgram(this.shader);
         };
         this.start = () => {
             const gl = this.model.canvas.getContext("webgl2");
@@ -26467,6 +26810,24 @@ class WebGLRenderer {
     }
 }
 exports.WebGLRenderer = WebGLRenderer;
+
+
+/***/ }),
+
+/***/ "./renderer/types.ts":
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.MotionPriority = void 0;
+var MotionPriority;
+(function (MotionPriority) {
+    MotionPriority[MotionPriority["None"] = 0] = "None";
+    MotionPriority[MotionPriority["Idle"] = 1] = "Idle";
+    MotionPriority[MotionPriority["Normal"] = 2] = "Normal";
+    MotionPriority[MotionPriority["Force"] = 3] = "Force";
+})(MotionPriority = exports.MotionPriority || (exports.MotionPriority = {}));
 
 
 /***/ }),
@@ -27877,7 +28238,7 @@ module.exports = _setPrototypeOf, module.exports.__esModule = true, module.expor
 /******/ 	
 /******/ 	/* webpack/runtime/getFullHash */
 /******/ 	(() => {
-/******/ 		__webpack_require__.h = () => ("40d41cd604adf9351f14")
+/******/ 		__webpack_require__.h = () => ("84eb8c8ba2fd9b613d13")
 /******/ 	})();
 /******/ 	
 /******/ 	/* webpack/runtime/global */
