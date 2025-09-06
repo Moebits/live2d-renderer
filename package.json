@@ -5,12 +5,13 @@
   "main": "build/live2dcubism.js",
   "types": "build/live2dcubism.d.ts",
   "scripts": {
-    "start": "npm run clean && npm run rsbuild && node dist/server/server.js",
+    "start": "npm run clean && npm run rsbuild && npm run move-files && node dist/server.js",
     "rsbuild": "rsbuild build --config rsbuild.client.ts && rsbuild build --config rsbuild.server.ts",
     "build": "del-cli ./build && tsc && del-cli ./build/core",
     "clean": "del-cli ./dist",
-    "predeploy": "npm run clean && npm run rsbuild",
-    "deploy": "gh-pages -d ./dist/client"
+    "move-files": "mv ./dist/client/* ./dist/ && mv ./dist/server/* ./dist/ && rmdir ./dist/client ./dist/server",
+    "predeploy": "npm run clean && npm run rsbuild && npm run move-files",
+    "deploy": "gh-pages -d dist"
   },
   "keywords": [
     "live2d",
@@ -41,7 +42,6 @@
     "del-cli": "^3.0.1",
     "dotenv": "^8.2.0",
     "express": "^4.17.3",
-    "gh-pages": "^6.3.0",
     "react": "^17.0.2",
     "react-dom": "^17.0.2",
     "react-router-dom": "^5.2.0",

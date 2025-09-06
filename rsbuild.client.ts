@@ -34,6 +34,9 @@ export default defineConfig({
         minify: false,
         filenameHash: false,
         sourceMap: false,
-        legalComments: "none"
+        legalComments: "none",
+        copy: [
+            {from: "./assets/Hiyori.zip", to: "assets/Hiyori.zip"}
+        ]
     }
 })

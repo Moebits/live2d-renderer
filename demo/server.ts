@@ -13,12 +13,12 @@ app.use(cors({credentials: true, origin: true}))
 app.disable("x-powered-by")
 app.set("trust proxy", true)
 
-app.use(express.static(path.join(__dirname, "./dist/client"), {index: false}))
+app.use(express.static(path.join(__dirname, "./dist"), {index: false}))
 app.use("/assets", express.static(path.join(__dirname, "./assets")))
 app.use("/models", express.static(path.join(__dirname, "./models")))
 
 app.get("/*", function(req, res, next) {
-    const document = fs.readFileSync(path.join(__dirname, "./dist/client/index.html"), {encoding: "utf-8"})
+    const document = fs.readFileSync(path.join(__dirname, "./dist/index.html"), {encoding: "utf-8"})
     res.status(200).send(document)
 })
 
