@@ -7,8 +7,6 @@ import Parameters from "./components/Parameters"
 import {Live2DCubismModel} from "../live2dcubism"
 import "./demo.less"
 
-require.context("../assets", true)
-
 export const ModelContext = React.createContext<{model: string; setModel: React.Dispatch<React.SetStateAction<string>>}>({model: "", setModel: () => null})
 export const AudioContext = React.createContext<{audio: string; setAudio: React.Dispatch<React.SetStateAction<string>>}>({audio: "", setAudio: () => null})
 export const Live2DContext = React.createContext<{live2D: Live2DCubismModel | null; setLive2D: React.Dispatch<React.SetStateAction<Live2DCubismModel | null>>}>({live2D: null, setLive2D: () => null})

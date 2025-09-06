@@ -1,6 +1,6 @@
 import React, {useContext, useReducer, useEffect, useState} from "react"
 import {Live2DContext} from "../demo"
-import {MotionPriority} from "../../live2dcubism"
+import type {MotionPriority} from "../../live2dcubism"
 import parametersIcon from "../../assets/parameters.png"
 import partsIcon from "../../assets/parts.png"
 import expressionIcon from "../../assets/expression.png"

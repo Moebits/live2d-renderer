@@ -21,7 +21,6 @@
         "node_modules",
         "dist",
         "demo",
-        "build",
-        "webpack.config.js"
+        "build"
     ]
 }

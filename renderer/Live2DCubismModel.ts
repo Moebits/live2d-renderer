@@ -5,7 +5,7 @@ import {ACubismMotion, FinishedMotionCallback, BeganMotionCallback} from "../fra
 import {CubismEyeBlink} from "../framework/src/effect/cubismeyeblink"
 import {CubismIdHandle} from "../framework/src/id/cubismid"
 import {CubismBreath, BreathParameterData} from "../framework/src/effect/cubismbreath"
-import {CubismMotionQueueManager, CubismMotionQueueEntryHandle, InvalidMotionQueueEntryHandleValue} from "../framework/src/motion/cubismmotionqueuemanager"
+import {CubismMotionQueueManager, CubismMotionQueueEntryHandle} from "../framework/src/motion/cubismmotionqueuemanager"
 import {CubismFramework} from "../framework/src/live2dcubismframework"
 import {CubismViewMatrix} from "../framework/src/math/cubismviewmatrix"
 import {CubismMatrix44} from "../framework/src/math/cubismmatrix44"
@@ -20,13 +20,22 @@ import {ExpressionController} from "./ExpressionController"
 import {CameraController} from "./CameraController"
 import {WebGLRenderer} from "./WebGLRenderer"
 import {Live2DModelOptions, Live2DBuffers, CubismCDI3Json, VTubeStudioJson, EventMap} from "./types"
-import fileType from "magic-bytes.js"
-import JSZip from "jszip"
+import type fileTypeFn from "magic-bytes.js"
+import type JSZip from "jszip"
 import path from "path"
 
 let id = null
 
 export const isLive2DZip = async (arrayBuffer: ArrayBuffer) => {
+    let fileType: typeof fileTypeFn
+    let JSZip: JSZip
+    try {
+        fileType = await import("magic-bytes.js").then((r) => r.default)
+        JSZip = await import("jszip").then((r) => r.default)
+    } catch {
+        return Promise.reject("jszip and magic-bytes.js required")
+    }
+
     let isZip = false
     const result = fileType(new Uint8Array(arrayBuffer))?.[0] || {mime: ""}
     if (result.mime === "application/zip") isZip = true
@@ -49,6 +58,15 @@ export const isLive2DZip = async (arrayBuffer: ArrayBuffer) => {
 }
 
 export const compressLive2DTextures = async (arrayBuffer: ArrayBuffer, maxSize = 8192, quality = 0.8, format = "webp") => {
+    let fileType: typeof fileTypeFn
+    let JSZip: JSZip
+    try {
+        fileType = await import("magic-bytes.js").then((r) => r.default)
+        JSZip = await import("jszip").then((r) => r.default)
+    } catch {
+        return Promise.reject("jszip and magic-bytes.js required")
+    }
+
     const result = fileType(new Uint8Array(arrayBuffer))?.[0] || {mime: ""}
     if (result.mime !== "application/zip") return arrayBuffer
     
@@ -386,6 +404,16 @@ export class Live2DCubismModel extends Live2DCubismUserModel {
     }
 
     public loadBuffers = async (link: string | ArrayBuffer) => {
+        let fileType: typeof fileTypeFn
+        let JSZip: JSZip
+        try {
+            fileType = await import("magic-bytes.js").then((r) => r.default)
+            JSZip = await import("jszip").then((r) => r.default)
+        } catch {
+            fileType = null
+            JSZip = null
+        }
+
         let isZip = false
         let arrayBuffer = link instanceof ArrayBuffer ? link : new ArrayBuffer(0)
         if (typeof link === "string") {
@@ -394,13 +422,15 @@ export class Live2DCubismModel extends Live2DCubismUserModel {
         }
         if (!arrayBuffer.byteLength) return Promise.reject(`Failed to load ${link}`)
 
-        const result = fileType(new Uint8Array(arrayBuffer))?.[0] || {mime: ""}
-        if (result.mime === "application/zip") isZip = true
+        if (fileType) {
+            const result = fileType(new Uint8Array(arrayBuffer))?.[0] || {mime: ""}
+            if (result.mime === "application/zip") isZip = true
+        }
 
         let files = {} as {[key: string]: ArrayBuffer}
         let basename = link instanceof ArrayBuffer ? "." : path.dirname(link)
     
-        if (isZip) {
+        if (isZip && JSZip) {
             const zip = await JSZip.loadAsync(arrayBuffer)
             this.size = arrayBuffer.byteLength
     
