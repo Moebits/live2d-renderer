@@ -1,6 +1,6 @@
 {
   "name": "live2d-renderer",
-  "version": "0.6.4",
+  "version": "0.6.5",
   "description": "An easy and simple to use Live2D model renderer in the browser.",
   "main": "build/live2dcubism.js",
   "types": "build/live2dcubism.d.ts",
@@ -10,7 +10,7 @@
     "build": "del-cli ./build && tsc && del-cli ./build/core",
     "clean": "del-cli ./dist",
     "predeploy": "npm run clean && npm run rsbuild",
-    "deploy": "gh-pages -d dist/client"
+    "deploy": "gh-pages -d ./dist/client"
   },
   "keywords": [
     "live2d",
