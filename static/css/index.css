@@ -1,244 +1,276 @@
 .titlebar-container {
-  display: flex;
+  background-color: var(--background);
   flex-direction: row;
   justify-content: center;
   align-items: center;
-  background-color: var(--background);
   height: max-content;
+  display: flex;
 }
+
 .titlebar-logo {
   width: auto;
   height: 70px;
 }
+
 .upload-button {
-  margin-left: 20px;
   background-color: var(--highlight);
-  border: none;
-  padding: 3px 5px;
-  cursor: pointer !important;
   pointer-events: all;
-  transition: all 0.1s;
-  border-radius: 7px;
-  border: 2px solid white;
   z-index: 9000;
+  border: 2px solid #fff;
+  border-radius: 7px;
+  margin-left: 20px;
+  padding: 3px 5px;
+  transition: all .1s;
+  cursor: pointer !important;
 }
+
 .upload-button-hover {
   border: 2px solid var(--highlight);
-  background-color: white;
+  background-color: #fff;
 }
+
 .upload-button-hover > img {
   filter: none;
 }
+
 .upload-button-hover > span {
   color: var(--highlight);
 }
+
 .upload-button-img {
-  height: 20px;
+  filter: brightness(0) invert();
   width: auto;
-  filter: brightness(0) invert(1);
+  height: 20px;
 }
+
 .upload-button-text {
+  color: #fff;
   margin-left: 5px;
   font-family: Tahoma, sans-serif;
   font-size: 23px;
-  color: white;
 }
+
 @media screen and (max-width: 620px) {
   .titlebar-container {
     flex-direction: column;
   }
+
   .upload-button {
     margin-top: 10px;
   }
 }
 
 .live2d-model-container {
-  position: relative;
-  display: flex;
   flex-direction: row;
   justify-content: center;
   align-items: center;
+  display: flex;
+  position: relative;
 }
+
 .live2d-controls {
   opacity: 0;
-  position: absolute;
-  bottom: 10px;
-  display: flex;
   flex-direction: row;
   justify-content: center;
   align-items: center;
-  transition: opacity 0.3s;
+  transition: opacity .3s;
+  display: flex;
+  position: absolute;
+  bottom: 10px;
 }
+
 .live2d-controls-visible {
   opacity: 1;
 }
+
 .live2d-control-icon {
+  cursor: pointer;
   width: auto;
   height: 40px;
-  cursor: pointer;
   margin-right: 10px;
 }
 
 .parameters-container {
-  display: flex;
-  flex-direction: column;
-  position: absolute;
   z-index: 5000;
-  background-color: transparent;
   pointer-events: none;
+  background-color: #0000;
+  flex-direction: column;
+  display: flex;
+  position: absolute;
   left: 50px;
 }
+
 .parameters-container-right {
-  display: flex;
-  flex-direction: column;
-  position: absolute;
   z-index: 5000;
-  background-color: transparent;
   pointer-events: none;
+  background-color: #0000;
+  flex-direction: column;
+  display: flex;
+  position: absolute;
   right: 50px;
 }
+
 .parameters-dialog-box {
-  max-height: 400px;
   width: 340px;
+  max-height: 400px;
   overflow: overlay;
   background-color: var(--parametersBG);
   border: 2px solid var(--highlight);
   pointer-events: all;
 }
+
 .parts-dialog-box {
-  margin-top: 20px;
-  max-height: 300px;
   width: 300px;
+  max-height: 300px;
   overflow: overlay;
   background-color: var(--parametersBG);
   border: 2px solid var(--highlight);
   pointer-events: all;
+  margin-top: 20px;
 }
+
 .parameters-dialog-row {
-  display: flex;
   flex-direction: row;
   justify-content: space-between;
   align-items: center;
   padding: 5px;
+  display: flex;
 }
+
 .parameters-dialog-row:hover {
   filter: brightness(140%);
 }
+
 .parameters-dialog-row-center {
-  display: flex;
   flex-direction: row;
   justify-content: center;
   align-items: center;
   padding: 5px;
+  display: flex;
 }
+
 .parameters-dialog-row-center:hover {
   filter: brightness(140%);
 }
+
 .parameters-dialog-title {
+  color: var(--highlight);
+  margin-left: 5px;
   margin-right: 5px;
   font-family: Tahoma, sans-serif;
   font-size: 16px;
   font-weight: bold;
-  margin-left: 5px;
-  color: var(--highlight);
 }
+
 .parameters-dialog-text {
+  color: var(--highlight);
+  margin-left: 5px;
   margin-right: 5px;
   font-family: Tahoma, sans-serif;
   font-size: 16px;
-  margin-left: 5px;
-  color: var(--highlight);
 }
+
 .parameters-dialog-icon {
   width: auto;
   height: 20px;
 }
+
 .parameters-slider {
-  display: flex;
+  align-items: center;
   width: 140px;
   height: 100%;
   margin-left: 10px;
   margin-right: 10px;
-  align-items: center;
-}
-.parameters-slider-track {
   display: flex;
-  height: 5px;
-  background-color: var(--highlight);
 }
+
+.parameters-slider-track {
+  background-color: var(--highlight);
+  height: 5px;
+  display: flex;
+}
+
 .parameters-slider-track.parameters-slider-track-1 {
   background-color: var(--highlight);
 }
+
 .parameters-slider-thumb {
   opacity: 1;
-  display: flex;
-  margin-top: -1px;
-  border-radius: 5px;
-  height: 12px;
-  width: 12px;
   background-color: #fd183e;
+  border-radius: 5px;
+  width: 12px;
+  height: 12px;
+  margin-top: -1px;
+  display: flex;
 }
-.parameters-slider-thumb:active {
+
+.parameters-slider-thumb:active, .parameters-slider-thumb:focus {
   outline: none;
 }
-.parameters-slider-thumb:focus {
-  outline: none;
-}
+
 .parameters-button {
   background-color: var(--highlight);
   border: 1px solid var(--highlight);
-  color: white;
-  font-family: Tahoma, sans-serif;
-  font-weight: bold;
-  font-size: 15px;
-  padding: 3px;
+  color: #fff;
   cursor: pointer;
-  transition: all 0.1s;
   margin-top: -5px;
   margin-bottom: 3px;
+  padding: 3px;
+  font-family: Tahoma, sans-serif;
+  font-size: 15px;
+  font-weight: bold;
+  transition: all .1s;
 }
+
 .parameters-button:hover {
-  background-color: white;
   color: var(--highlight);
+  background-color: #fff;
 }
+
 @media screen and (max-width: 850px) {
   .parameters-container {
     top: 800px;
   }
+
   .parameters-container-right {
     right: unset;
+    padding-bottom: 20px;
     top: 1530px;
     left: 50px;
-    padding-bottom: 20px;
   }
 }
+
 @media screen and (max-width: 450px) {
   .parameters-container {
     top: 620px;
     left: 25px;
   }
+
   .parameters-container-right {
     right: unset;
+    padding-bottom: 20px;
     top: 1350px;
     left: 25px;
-    padding-bottom: 20px;
   }
 }
 
 :root {
-  --background: #ffffff;
+  --background: #fff;
   --highlight: #ff6e2d;
-  --parametersBG: #ffffff;
+  --parametersBG: #fff;
 }
+
 * {
   scrollbar-width: none;
   scrollbar-color: var(--highlight) var(--background);
 }
+
 body {
-  display: flex;
   justify-content: center;
   align-items: center;
+  display: flex;
 }
+
 input[type="file"] {
   display: none;
 }
