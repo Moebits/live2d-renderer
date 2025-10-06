@@ -1,6 +1,6 @@
 <div align="left">
   <p>
-    <img src="https://github.com/Moebits/live2d-renderer/blob/main/assets/live2dlogo.png?raw=true" width="700" />
+    <img src="https://github.com/Moebytes/live2d-renderer/blob/main/assets/live2dlogo.png?raw=true" width="700" />
   </p>
   <p>
     <a href="https://nodei.co/npm/live2d-renderer/"><img src="https://nodei.co/npm/live2d-renderer.png" /></a>
