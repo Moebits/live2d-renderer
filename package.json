@@ -22,10 +22,10 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/Moebits/Live2D-Renderer"
+    "url": "https://github.com/Moebytes/Live2D-Renderer"
   },
   "homepage": "https://live2d-renderer.netlify.app/",
-  "author": "Moebits",
+  "author": "Moebytes",
   "license": "MIT",
   "devDependencies": {
     "@rsbuild/core": "^1.5.4",
